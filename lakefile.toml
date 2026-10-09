@@ -1,0 +1,75 @@
+name = "classical_upstream"
+version = "0.1.0"
+keywords = ["math", "algorithmic-information-theory", "learning-theory", "ergodic-theory", "realizability"]
+
+[leanOptions]
+pp.unicode.fun = true # pretty-prints `fun a ↦ b`
+relaxedAutoImplicit = false
+weak.linter.mathlibStandardSet = true
+maxSynthPendingDepth = 3
+
+[[require]]
+name = "mathlib"
+scope = "leanprover-community"
+rev = "v4.34.0"
+
+[[require]]
+name = "Foundation"
+git = "https://github.com/FormalizedFormalLogic/Foundation"
+rev = "c8d29fd50014c2a7cd0f3739e4678b0bb353235c"
+
+[[lean_lib]]
+name = "CodeLayer"
+# The glob must include the root itself (`<Root>.*` matches the root and its submodules),
+# for the same reason as the `ALT` library of the package that requires this one.
+roots = ["CodeLayer"]
+globs = ["CodeLayer.*"]
+
+[[lean_lib]]
+name = "AIT"
+# The glob must include the root itself (`<Root>.*` matches the root and its submodules),
+# for the same reason as the `ALT` library of the package that requires this one.
+roots = ["AIT"]
+globs = ["AIT.*"]
+
+[[lean_lib]]
+name = "ChaitinIncompleteness"
+# The glob must include the root itself (`<Root>.*` matches the root and its submodules),
+# for the same reason as the `ALT` library of the package that requires this one.
+roots = ["ChaitinIncompleteness"]
+globs = ["ChaitinIncompleteness.*"]
+
+[[lean_lib]]
+name = "Learning"
+# The glob must include the root itself (`<Root>.*` matches the root and its submodules),
+# for the same reason as the `ALT` library of the package that requires this one.
+roots = ["Learning"]
+globs = ["Learning.*"]
+
+[[lean_lib]]
+name = "AnytimeValid"
+# The glob must include the root itself (`<Root>.*` matches the root and its submodules),
+# for the same reason as the `ALT` library of the package that requires this one.
+roots = ["AnytimeValid"]
+globs = ["AnytimeValid.*"]
+
+[[lean_lib]]
+name = "ErgodicTheory"
+# The glob must include the root itself (`<Root>.*` matches the root and its submodules),
+# for the same reason as the `ALT` library of the package that requires this one.
+roots = ["ErgodicTheory"]
+globs = ["ErgodicTheory.*"]
+
+[[lean_lib]]
+name = "Realizability"
+# The glob must include the root itself (`<Root>.*` matches the root and its submodules),
+# for the same reason as the `ALT` library of the package that requires this one.
+roots = ["Realizability"]
+globs = ["Realizability.*"]
+
+[[lean_lib]]
+name = "ShannonInfo"
+# The glob must include the root itself (`<Root>.*` matches the root and its submodules),
+# for the same reason as the `ALT` library of the package that requires this one.
+roots = ["ShannonInfo"]
+globs = ["ShannonInfo.*"]

@@ -1,0 +1,43 @@
+cff-version: 1.2.0
+message: >-
+  If you use these formalizations, please cite this repository as below, and
+  cite the original authors of each result, named in the README and in each
+  module's docstring.
+title: >-
+  lean-classical-upstream: classical results in algorithmic information
+  theory, learning theory, ergodic theory and realizability, machine-checked
+  in Lean 4
+type: software
+authors:
+  - family-names: Palamarchuk
+    given-names: Mykola
+    email: lividgreen@gmail.com
+    orcid: https://orcid.org/0009-0007-2106-5777
+    affiliation: Independent researcher
+repository-code: https://github.com/lividgreen/lean-classical-upstream
+url: https://lividgreen.github.io/lean-classical-upstream/
+abstract: >-
+  A Lean 4 + Mathlib package of classical results with their proofs, each
+  labelled by its standing in Lean — formalized (first in Lean here), ported
+  (proved elsewhere in a form that could not be used, so re-proved) or
+  duplicated (proved elsewhere, a candidate for removal in favour of the
+  original): Chaitin's incompleteness theorem for consistent first-order
+  theories in its plain and additive forms; Levin's coding theorem on a
+  universal prefix machine built from serialized codes; the statistical-query
+  model with verified learners; Ville's inequality; Hoeffding's bound for
+  finite-state Markov chains under a spectral gap; assemblies over Kleene's
+  first algebra; finite Shannon information theory; and a port of the
+  pointwise Birkhoff ergodic theorem. No sorry, no native_decide, standard
+  axioms only, with each capstone's axiom footprint asserted by a
+  build-enforced guard.
+license: Apache-2.0
+keywords:
+  - Lean 4
+  - Mathlib
+  - formal verification
+  - algorithmic information theory
+  - Kolmogorov complexity
+  - Chaitin incompleteness
+  - statistical queries
+  - Ville's inequality
+  - realizability
