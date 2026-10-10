@@ -17,16 +17,18 @@ set_option linter.style.header false
 /-!
 # Driven columns: finite systems fed by an eventually periodic input
 
-This module holds the engine alone; the window form, the driven interior, the rays and table `90`'s
-column described below live in `ALT/DrivenTables.lean` (in the companion library
-`lean-algorithmic-learning-theory`); `EventuallyPeriodic` is defined here.
+This module holds the engine alone; `EventuallyPeriodic` is defined here. The driven interior, the
+window form and table `90`'s column, stated for a local rule on all configurations of the line, are
+in `ErgodicTheory/LocalRuleColumns.lean`; their table-rule forms and the rays described below live
+in `CellularAutomata/ObservedRays.lean` (in the companion package
+`elementary_cellular_automata`).
 
 ([RuleSpace] §4 Proposition 4.2, [RuleSpace] §4 Remark 4.1)
 
-`ALT/ObservedColumn.lean` (in the companion library `lean-algorithmic-learning-theory`) proves a
-table's own column eventually periodic when the diameter along its orbit never grows, and exhibits
-an accreting table (`f90`) whose single-seed CENTER column is nonetheless eventually periodic — the
-converse fails. This file extends that machinery two ways.
+`CellularAutomata/ObservedColumn.lean` (in the companion package `elementary_cellular_automata`)
+proves a table's own column eventually periodic when the diameter along its orbit never grows,
+and exhibits an accreting table (`f90`) whose single-seed CENTER column is nonetheless eventually
+periodic — the converse fails. This file extends that machinery two ways.
 
 First, a finite-valued sequence driven by an eventually periodic input is itself eventually
 periodic (`eventuallyPeriodic_of_driven`), by a pigeonhole-and-propagate argument independent of
@@ -39,7 +41,7 @@ recovering the column (`observedRay_zero`) and every other integer speed beyond 
 outside the light cone entirely (not treated here).
 
 Second, `f90`'s single-seed column at cell `1` — one cell over from the center column
-`ALT/ObservedColumn.lean` already settles — is NOT eventually periodic
+`CellularAutomata/ObservedColumn.lean` already settles — is NOT eventually periodic
 (`not_eventuallyPeriodic_observedColumn_f90_single_one`): it reads `1` at every stage `2 ^ j - 1`
 (`j ≥ 1`) and `0` strictly between consecutive such stages, a gap that grows without bound. The
 identity behind this (`iterate_two_pow_f90`) is pure `ZMod 2` cancellation over `2 ^ j` steps, no

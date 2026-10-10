@@ -41,3 +41,14 @@ keywords:
   - statistical queries
   - Ville's inequality
   - realizability
+doi: 10.5281/zenodo.23257423
+# Deliberately only the concept DOI (decision 2026-07-28, as in the companion
+# package): per-version DOIs are minted after the tag, so an in-repo list is
+# always one behind; Zenodo's record lists every version, and the concept DOI
+# resolves to the latest.
+identifiers:
+  - type: doi
+    value: 10.5281/zenodo.23257423
+    description: >-
+      Concept DOI — resolves to the latest archived version, and its Zenodo
+      record lists the per-version DOIs.

@@ -9,8 +9,10 @@ public import ErgodicTheory.AxiomAudit
 public import ErgodicTheory.Birkhoff.AxiomAudit
 public import ErgodicTheory.Birkhoff.PointwiseBirkhoff
 public import ErgodicTheory.DrivenColumns
+public import ErgodicTheory.LocalRuleColumns
 public import ErgodicTheory.MarkovHoeffding
 public import ErgodicTheory.MixingHoeffding
+public import ErgodicTheory.PascalColumns
 
 /-!
 # `ErgodicTheory`

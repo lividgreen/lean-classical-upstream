@@ -2,6 +2,7 @@
 
 [![CI](https://github.com/lividgreen/lean-classical-upstream/actions/workflows/lean_action_ci.yml/badge.svg)](https://github.com/lividgreen/lean-classical-upstream/actions/workflows/lean_action_ci.yml)
 [![API docs](https://img.shields.io/badge/docs-API%20reference-4c1)](https://lividgreen.github.io/lean-classical-upstream/)
+[![DOI](https://img.shields.io/badge/DOI-10.5281%2Fzenodo.23257423-blue)](https://doi.org/10.5281/zenodo.23257423)
 [![Lean](https://img.shields.io/badge/Lean%204-Mathlib-black)](https://leanprover-community.github.io/)
 [![License](https://img.shields.io/badge/license-Apache--2.0-lightgrey)](LICENSE)
 
@@ -32,14 +33,15 @@ no label: they travel with the sentences whose proofs use them.
 
 The research library this repository was split from is
 [lean-algorithmic-learning-theory](https://github.com/lividgreen/lean-algorithmic-learning-theory),
-which requires this package and holds everything that is not classical. Nothing
-here imports it.
+which requires this package and holds the rest of the research beside the
+radius-one rule space, which `lean-elementary-cellular-automata` holds and which
+requires this package too. Nothing here imports either.
 
 ## Verification standard
 
 - No `sorry`, `admit`, or `native_decide`; standard axioms only
   (`propext`, `Classical.choice`, `Quot.sound`).
-- **Build-enforced axiom hygiene**: 235 `#guard_msgs in #print axioms` guards
+- **Build-enforced axiom hygiene**: 249 `#guard_msgs in #print axioms` guards
   assert each capstone's exact axiom set — most in an audit module per library
   root and the Birkhoff port's own, the rest in-file in the modules they
   certify; `lake build` fails on any drift.
@@ -98,6 +100,8 @@ in existence; corrections are welcome as issues.
 | `ErgodicTheory` | `Birkhoff.PointwiseBirkhoff` | ported | the pointwise ergodic theorem (Birkhoff 1931), vendored from [lua-vr/pointwise-birkhoff](https://github.com/lua-vr/pointwise-birkhoff) | that repository; not in Mathlib |
 | `ErgodicTheory` | `MarkovHoeffding`, `MixingHoeffding` | formalized | Hoeffding's bound for a finite-state Markov chain under a spectral gap (Fan, Jiang and Sun 2021) | — |
 | `ErgodicTheory` | `DrivenColumns` | formalized | a finite system driven by an eventually periodic input is eventually periodic (Endrullis, Hendriks and Klop 2011) | — |
+| `ErgodicTheory` | `LocalRuleColumns` | formalized | a local rule on the line: the columns between two eventually periodic columns are eventually periodic (Jen 1990, §3); rule `90` after `2^j` steps is the sum of the cells `2^j` away (Wolfram 1983); its column beside the single seed's center is not eventually periodic (Jen 1990, Proposition 2) | — |
+| `ErgodicTheory` | `PascalColumns` | formalized | rule `90` from a single cell is Pascal's triangle modulo two (Wolfram 1983), and `C(a + b, a)` is odd exactly when `a` and `b` share no binary digit (Lucas 1878, at the prime two) | Mathlib has Lucas's congruence and no statement at the prime two; Rocq has the rule-`60` form |
 | `Realizability` | `Realizability`, `RealizabilityCCC`, `RealizabilityCoproduct`, `RealizabilitySubobject` | formalized | assemblies over Kleene's first algebra: Cartesian closed, finite coproducts, the finite fragment's subobject classifier (van Oosten 2008; Longley 1995) | lean-pool and Bauer: partial combinatory algebras, no assemblies |
 | `ShannonInfo` | `FiniteInfoTheory` | duplicated | finite entropy, mutual and conditional mutual information, data processing, Fano (Shannon 1948; Cover and Thomas) | the PFR project's entropy API, outside Mathlib |
 | `ShannonInfo` | `ChengCCC` | formalized | the necessity bound of Cheng (2026), Theorem 4 | — |
@@ -333,6 +337,18 @@ docstring carries the full statement and its boundary.
   next value is, from some step on, a fixed function of its value and of an
   eventually periodic input is eventually periodic
   (`eventuallyPeriodic_of_driven`).
+- **Columns of a local rule on the line** (`LocalRuleColumns.lean`): for any
+  local rule over a finite alphabet and any configuration of the line, the
+  columns between two eventually periodic columns are eventually periodic
+  (`eventuallyPeriodic_column_between`); rule `90` after `2^j` steps is the sum
+  of the cells `2^j` away (`iterate_two_pow_step90`); and from the single seed
+  its column at cell `1` is not eventually periodic
+  (`not_eventuallyPeriodic_column_step90_single_one`).
+- **Pascal's triangle modulo two** (`PascalColumns.lean`): from the single seed,
+  rule `90`'s value at cell `a − b` and step `a + b` is `C(a + b, a)` modulo two
+  (`step_rule90_single_pascal`), zero at the other cells, and `1` exactly when
+  `a` and `b` share no binary digit (`step_rule90_single_eq_one_iff`), by
+  Lucas's criterion at the prime two (`choose_add_mod_two_eq_one_iff`).
 - **Cheng's necessity bound** (`ChengCCC.lean`): the misidentification and
   forgetting lower bounds of Cheng (2026), Theorem 4
   (`misid_lower_bound`, `forgetting_lower_bound`).
@@ -349,8 +365,10 @@ docstring carries the full statement and its boundary.
 ## Relation to lean-algorithmic-learning-theory
 
 That library requires this package by tag and holds the research the classical
-results serve: persistence capacity, the reflection chain, growing worlds and
-the radius-one rule space, with the companion papers that state them. Some
+results serve: persistence capacity, the reflection chain and the growing
+worlds' theory, with the companion papers that state them. The radius-one rule
+space and the growing world's basic objects are in
+`lean-elementary-cellular-automata`, which requires this package as well. Some
 docstrings here say where a downstream result lives there; they are pointers,
 never imports.
 
@@ -363,7 +381,12 @@ ported is a standing invitation to bridge it to the original and delete ours.
 
 ## Citation and license
 
-See `CITATION.cff`. Code is Apache-2.0 (`LICENSE`); third-party attribution
+See `CITATION.cff` — concept DOI
+[10.5281/zenodo.23257423](https://doi.org/10.5281/zenodo.23257423)
+always resolves to the latest archived version. For a specific tagged
+version and its own version DOI, see the
+[GitHub Releases page](https://github.com/lividgreen/lean-classical-upstream/releases)
+and `CITATION.cff`. Code is Apache-2.0 (`LICENSE`); third-party attribution
 in `NOTICE`. Developed by Mykola Palamarchuk (independent researcher), with
 substantial AI assistance (Claude Code, Anthropic) under the author's direction
 and review — every result is machine-checked by Lean.
