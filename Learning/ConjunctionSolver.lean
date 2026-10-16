@@ -1,32 +1,23 @@
-/-
-Copyright (c) 2026 Mykola Palamarchuk. All rights reserved.
-Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Mykola Palamarchuk
--/
 module
 
 public import CodeLayer.Code.BitGates
 public import Learning.DecisionListData
 
--- Formal-check file, not Mathlib-destined: opt out of the house-style linters.
-set_option linter.style.header false
-set_option linter.style.longLine false
 
 /-!
 # The conjunction consistency solver
 
-Provenance: [SQ] §4's *General form* paragraph, which names conjunctions first among the classes
-whose poly-time consistency problem discharges Theorem 4.1's maintainer hypothesis (Lemma 4.2(3))
-by the same argument as the 1-decision-list class (`Learning/DecisionListSolver.lean`,
-`Learning/DecisionListPredictor.lean`): poly-time consistency ⇒ poly-time maintenance
-(Hirsh–Mishra–Pitt 2004). This module makes the conjunction case a second machine-checked instance.
+Poly-time consistency of a class implies poly-time maintenance of its version space
+(Hirsh–Mishra–Pitt 2004). The 1-decision-list class (`Learning/DecisionListSolver.lean`,
+`Learning/DecisionListPredictor.lean`) is a first machine-checked instance; this module makes the
+conjunction case (Valiant 1984) a second.
 
 Builds on `Learning/DecisionListData.lean` (the shared instance/example encoding: `readK`/`readM`,
 `peel`/`cPeel`, `headL`/`tailL`, `WF`/`WFBits`, `encodeList`, `lblOf`/`fvOf`/`featOf`),
-`CodeLayer/PolyTime.lean` (`PolyBoundedOn`, `PolyTimeOn`, reached via `DecisionListData`'s own import),
-and `CodeLayer/Code/BitGates.lean` (the bit-logic gates `cAnd`/`cOr`/`cNot`/`cEqBit`). Deliberately does
-NOT import `Learning/DecisionListSolver.lean`: a conjunction is not a decision list, and the elimination
-algorithm below needs none of the greedy solver's machinery.
+`CodeLayer/PolyTime.lean` (`PolyBoundedOn`, `PolyTimeOn`, reached via `DecisionListData`'s own
+import), and `CodeLayer/Code/BitGates.lean` (the bit-logic gates `cAnd`/`cOr`/`cNot`/`cEqBit`).
+Deliberately does NOT import `Learning/DecisionListSolver.lean`: a conjunction is not a decision
+list, and the elimination algorithm below needs none of the greedy solver's machinery.
 
 ## The class
 
@@ -52,9 +43,9 @@ solver's greedy round/list-splice machinery.
 
 @[expose] public section
 
-namespace Conj
+namespace Conjunction
 
-open OneDL
+open BitGates DecisionList
 open Nat.Partrec (Code)
 open Nat.Partrec.Code
 open TimeCost
@@ -71,7 +62,8 @@ private theorem litP_pair (j p : ℕ) : litP (Nat.pair j p) = p := by simp [litP
 
 /-- **Conjunction evaluation.** A conjunction is a `List` of literals; it evaluates to `1` on `e`
 when every literal is satisfied, else `0`. Satisfaction compares `featOf e (litJ r)` against
-`litP r` by zero/nonzero-ness (mirroring `OneDL`'s own `bEq`), not raw equality: this is what makes
+`litP r` by zero/nonzero-ness (mirroring `BitGates`'s own `bEq`), not raw equality: this is what
+makes
 a "junk" polarity `litP r ∉ {0,1}` behave exactly like `1` rather than being unsatisfiable by
 construction, matching `ExistsConsistentConj`'s literal space below (feature-index-valid, polarity
 unconstrained) with no separate polarity hypothesis needed anywhere downstream. -/
@@ -130,7 +122,8 @@ the literal space the solver searches. This is what the decider below decides. -
 def ExistsConsistentConj (inst : ℕ) (exs : List ℕ) : Prop :=
   ∃ lits : List ℕ, (∀ r ∈ lits, litJ r < readK inst) ∧ ConsistentConj lits exs
 
-/-! ## Local semantic bit-ops (mirror the gate `val` laws, cf. `OneDL`'s own local mirrors) -/
+/-! ## Local semantic bit-ops (mirror the gate `val` laws, cf. `DecisionList`'s own local mirrors)
+-/
 
 /-- `¬` on a bit — mirrors `val_cNot`. -/
 def bitNot (n : ℕ) : ℕ := if n = 0 then 1 else 0
@@ -144,7 +137,8 @@ theorem val_cAnd' (a b : ℕ) : val cAnd (Nat.pair a b) = bitAnd a b := val_cAnd
 theorem val_cOr' (a b : ℕ) : val cOr (Nat.pair a b) = bitOr a b := val_cOr a b
 
 theorem bitNot_le_one (n : ℕ) : bitNot n ≤ 1 := by unfold bitNot; split <;> simp
-theorem bitAnd_le_one (a b : ℕ) : bitAnd a b ≤ 1 := by unfold bitAnd; split <;> [simp; split <;> simp]
+theorem bitAnd_le_one (a b : ℕ) : bitAnd a b ≤ 1 := by
+    unfold bitAnd; split <;> [simp; split <;> simp]
 theorem bitOr_le_one (a b : ℕ) : bitOr a b ≤ 1 := by unfold bitOr; split <;> [split <;> simp; simp]
 
 /-! ## Stage CJ-A — per-feature literal survival, an `m`-round AND-fold over the examples
@@ -180,7 +174,7 @@ def aliveStepFn (j acc : ℕ) : ℕ :=
 
 /-! ### The `Code` realisation of stage CJ-A -/
 
-/-- Flag-cons head, as a `Code` (mirrors `OneDL`'s own private copy). -/
+/-- Flag-cons head, as a `Code` (mirrors `DecisionList`'s own private copy). -/
 def cHeadL : Code := comp left right
 /-- Flag-cons tail, as a `Code`. -/
 def cTailL : Code := comp right right
@@ -190,7 +184,8 @@ private theorem val_cHeadL (L : ℕ) : val cHeadL L = headL L := by
   simp only [cHeadL, val_comp, val_left, val_right, headL]
 private theorem val_cTailL (L : ℕ) : val cTailL L = tailL L := by
   simp only [cTailL, val_comp, val_right, tailL]
-private theorem tc_cHeadL (L : ℕ) : tc cHeadL L = 3 := by simp only [cHeadL, tc_comp, tc_left, tc_right]
+private theorem tc_cHeadL (L : ℕ) : tc cHeadL L = 3 := by
+    simp only [cHeadL, tc_comp, tc_left, tc_right]
 private theorem tc_cTailL (L : ℕ) : tc cTailL L = 3 := by simp only [cTailL, tc_comp, tc_right]
 
 /-- `instA` as a `Code`. -/
@@ -200,7 +195,8 @@ def cJA : Code := right
 /-- `readData (instA N)` as a `Code` (`readData inst = tailL inst` on this instance encoding). -/
 def cDataA : Code := comp cTailL cInstA
 
-private theorem val_cInstA (N : ℕ) : val cInstA N = instA N := by simp only [cInstA, val_left, instA]
+private theorem val_cInstA (N : ℕ) : val cInstA N = instA N := by
+    simp only [cInstA, val_left, instA]
 private theorem val_cDataA (N : ℕ) : val cDataA N = readData (instA N) := by
   simp only [cDataA, val_comp, val_cTailL, val_cInstA, tailL, readData, instA]
 
@@ -231,9 +227,11 @@ def cCurLblA : Code := comp left cCurExA
 def cFvCurA : Code := comp right cCurExA
 /-- The current example's feature `j`. -/
 def cCurFeatA : Code := comp cHeadL (comp cPeel (pair cFvCurA cJaA))
-/-- Is the current example irrelevant to literal `⟨j,0⟩`'s survival (label `0`, or feature `= 0`)? -/
+/-- Is the current example irrelevant to literal `⟨j,0⟩`'s survival (label `0`, or feature
+`= 0`)? -/
 def cSafe0A : Code := comp cOr (pair (comp cNot cCurLblA) (comp cNot cCurFeatA))
-/-- Is the current example irrelevant to literal `⟨j,1⟩`'s survival (label `0`, or feature `= 1`)? -/
+/-- Is the current example irrelevant to literal `⟨j,1⟩`'s survival (label `0`, or feature
+`= 1`)? -/
 def cSafe1A : Code := comp cOr (pair (comp cNot cCurLblA) cCurFeatA)
 /-- The updated `a0` field. -/
 def cA0'A : Code := comp cAnd (pair cA0A cSafe0A)
@@ -251,7 +249,8 @@ private theorem val_cA0A (a i acc : ℕ) : val cA0A (Nat.pair a (Nat.pair i acc)
   simp only [cA0A, cAccA, val_comp, val_left, val_right, Nat.unpair_pair, a0A]
 private theorem val_cA1A (a i acc : ℕ) : val cA1A (Nat.pair a (Nat.pair i acc)) = a1A acc := by
   simp only [cA1A, cAccA, val_comp, val_right, Nat.unpair_pair, a1A]
-private theorem val_cExSufA (a i acc : ℕ) : val cExSufA (Nat.pair a (Nat.pair i acc)) = exSufA acc := by
+private theorem val_cExSufA (a i acc : ℕ) : val cExSufA (Nat.pair a (Nat.pair i acc)) =
+    exSufA acc := by
   simp only [cExSufA, cAccA, val_comp, val_left, val_right, Nat.unpair_pair, exSufA]
 private theorem val_cJaA (a i acc : ℕ) : val cJaA (Nat.pair a (Nat.pair i acc)) = jA a := by
   simp only [cJaA, cJA, val_comp, val_left, val_right, Nat.unpair_pair, jA]
@@ -283,7 +282,8 @@ private theorem val_cAliveLoop_raw (N t : ℕ) :
   | succ k ih => rw [val_prec_succ, val_cAliveStep, ih, Function.iterate_succ_apply']
 
 /-- The accumulator after the full `m`-round scan. -/
-def aliveAcc (N : ℕ) : ℕ := (aliveStepFn (jA N))^[readM (instA N)] (aliveInitAcc (readData (instA N)))
+def aliveAcc (N : ℕ) : ℕ := (aliveStepFn (jA N))^[readM (instA N)]
+    (aliveInitAcc (readData (instA N)))
 
 /-- `aliveVal0 inst j`: `1` iff no labelled-`1` example of `inst` violates literal `⟨j,0⟩`. -/
 def aliveVal0 (inst j : ℕ) : ℕ := a0A (aliveAcc (Nat.pair inst j))
@@ -311,8 +311,8 @@ private theorem val_cAliveLoop (N : ℕ) : val cAliveLoop N = aliveAcc N := by
 /-! ### Reading `aliveVal0`/`aliveVal1` off `cAliveLoop`'s bare output
 
 Exposed so downstream stages read the two survival bits off `cAliveLoop` by composing with a plain
-projection — the fix for the T41-style private bridge (a public equation lemma from the start,
-rather than a Code-level `rfl` reconstructing a private composition after the fact). -/
+projection: a public equation lemma from the start, rather than a Code-level `rfl` reconstructing
+a private composition after the fact. -/
 
 /-- The `a0`-field of a BARE `cAliveLoop` output (not a step-input triple). -/
 def cReadA0 : Code := comp left right
@@ -364,7 +364,7 @@ private theorem aliveStepFn_iterate (j : ℕ) (exs : List ℕ) (a0 a1 : ℕ) :
       simp only [List.foldl_cons]
 
 /-- A `bitAnd`-accumulating `foldl` is nonzero iff the seed is, and every element fires. -/
-private theorem andFold_ne_zero_iff {α : Type*} (f : α → ℕ) (l : List α) (init : ℕ) :
+private theorem and_fold_ne_zero_iff {α : Type*} (f : α → ℕ) (l : List α) (init : ℕ) :
     (l.foldl (fun z x => bitAnd z (f x)) init) ≠ 0 ↔ init ≠ 0 ∧ ∀ x ∈ l, f x ≠ 0 := by
   induction l generalizing init with
   | nil => simp
@@ -384,7 +384,7 @@ theorem aliveVal0_iff (inst j : ℕ) (exs : List ℕ)
     simp only [instA, jA, Nat.unpair_pair, aliveInitAcc]
     rw [hdeq, ← hdlen, aliveStepFn_iterate]
     simp only [Nat.unpair_pair]
-  rw [hval, andFold_ne_zero_iff]
+  rw [hval, and_fold_ne_zero_iff]
   simp only [ne_eq, one_ne_zero, not_false_eq_true, true_and, bitOr_ne_zero, bitNot_ne_zero]
 
 /-- **`aliveVal1` characterisation.** Literal `⟨j,1⟩` survives iff no example of `exs` both carries
@@ -399,7 +399,7 @@ theorem aliveVal1_iff (inst j : ℕ) (exs : List ℕ)
     simp only [instA, jA, Nat.unpair_pair, aliveInitAcc]
     rw [hdeq, ← hdlen, aliveStepFn_iterate]
     simp only [Nat.unpair_pair]
-  rw [hval, andFold_ne_zero_iff]
+  rw [hval, and_fold_ne_zero_iff]
   simp only [ne_eq, one_ne_zero, not_false_eq_true, true_and, bitOr_ne_zero, bitNot_ne_zero]
 
 private theorem aliveVal0_le_one (inst j : ℕ) : aliveVal0 inst j ≤ 1 := by
@@ -424,10 +424,11 @@ private theorem aliveVal1_le_one (inst j : ℕ) : aliveVal1 inst j ≤ 1 := by
 
 /-! ### CJ-A native cost
 
-Mirrors `OneDL`'s own `tc_cPurity_raw` derivation: every gate is `O(1)` on bit operands, and the only
+Mirrors `DecisionList`'s own `tc_cPurity_raw` derivation: every gate is `O(1)` on bit operands, and
+the only
 value-scaling cost is the feature peel to index `j`, `O(j)`. -/
 
-/-- The peel loop's native cost — re-derived here since `OneDL`'s own copy is private. -/
+/-- The peel loop's native cost — re-derived here since `DecisionList`'s own copy is private. -/
 private theorem tc_cPeel_le (L m : ℕ) : tc cPeel (Nat.pair L m) ≤ 8 * m + 4 := by
   unfold cPeel
   have h := tc_prec_le (cf := pair left right) (cg := cTailStep) (B := 7)
@@ -448,14 +449,16 @@ private theorem inv_exSufA_peel (j data : ℕ) :
         ih]
       simp only [peel, Function.iterate_succ_apply']
 
-private theorem inv_a0A_le_one (j data : ℕ) : ∀ t, a0A ((aliveStepFn j)^[t] (aliveInitAcc data)) ≤ 1 := by
+private theorem inv_a0A_le_one (j data : ℕ) : ∀ t, a0A ((aliveStepFn j)^[t] (aliveInitAcc data)) ≤
+    1 := by
   intro t
   cases t with
   | zero => simp [aliveInitAcc, a0A]
   | succ k =>
       rw [Function.iterate_succ_apply']; simp only [aliveStepFn, a0A, Nat.unpair_pair]
       exact bitAnd_le_one _ _
-private theorem inv_a1A_le_one (j data : ℕ) : ∀ t, a1A ((aliveStepFn j)^[t] (aliveInitAcc data)) ≤ 1 := by
+private theorem inv_a1A_le_one (j data : ℕ) : ∀ t, a1A ((aliveStepFn j)^[t] (aliveInitAcc data)) ≤
+    1 := by
   intro t
   cases t with
   | zero => simp [aliveInitAcc, a1A]
@@ -465,13 +468,13 @@ private theorem inv_a1A_le_one (j data : ℕ) : ∀ t, a1A ((aliveStepFn j)^[t] 
 
 /-- **Visited-state bit-ness.** At every visited example `i < readM inst`, the label and feature `j`
 are bits (`WFBits`). -/
-private theorem visited_bits_A (inst j i : ℕ) (hw : WFBits inst) (hi : i < readM inst) :
+private theorem visited_bits_aliveStepFn (inst j i : ℕ) (hw : WFBits inst) (hi : i < readM inst) :
     lblOf (headL (exSufA ((aliveStepFn j)^[i] (aliveInitAcc (readData inst))))) ≤ 1 ∧
     featOf (headL (exSufA ((aliveStepFn j)^[i] (aliveInitAcc (readData inst))))) j ≤ 1 := by
   rw [inv_exSufA_peel]
   obtain ⟨_hwf, exs, hdeq, hdlen, hlbl, hfeat⟩ := hw
   have hie : i < exs.length := by rw [hdlen]; exact hi
-  rw [hdeq, getExample_encode exs i hie]
+  rw [hdeq, get_example_encode exs i hie]
   exact ⟨hlbl _ (List.getElem_mem hie), hfeat _ (List.getElem_mem hie) j⟩
 
 private theorem tc_cAccA_le (a i acc : ℕ) : tc cAccA (Nat.pair a (Nat.pair i acc)) ≤ 3 := by
@@ -494,7 +497,7 @@ private theorem tc_cFvCurA_le (a i acc : ℕ) : tc cFvCurA (Nat.pair a (Nat.pair
 
 /-- **The feature read: the one value-scaling cost, `O(jA a)`.** Left unreduced (`val cFvCurA`/
 `val cJaA` stay as atoms) so the goal's own `simp`-normal form matches `hpeel` verbatim — the same
-device `OneDL`'s own `tc_cFeat_le` uses. -/
+device `DecisionList`'s own `tc_cFeat_le` uses. -/
 private theorem tc_cCurFeatA_le (a i acc : ℕ) :
     tc cCurFeatA (Nat.pair a (Nat.pair i acc)) ≤ 8 * jA a + 40 := by
   have hfv := tc_cFvCurA_le a i acc
@@ -578,7 +581,8 @@ private theorem tc_cAliveStep_le (a i acc : ℕ) (h0 : a0A acc ≤ 1) (h1 : a1A 
 /-- **`cAliveLoop`'s native cost on a well-formed instance.** -/
 private theorem tc_cAliveLoop_raw (inst j : ℕ) (hw : WFBits inst) :
     tc cAliveLoop (Nat.pair inst j) ≤ (16 * j + 1501) * readM inst + 500 := by
-  have hpair : val (pair cAliveId cAliveCount) (Nat.pair inst j) = Nat.pair (Nat.pair inst j) (readM inst) := by
+  have hpair : val (pair cAliveId cAliveCount) (Nat.pair inst j) =
+      Nat.pair (Nat.pair inst j) (readM inst) := by
     rw [val_pair, val_cAliveId, val_cAliveCount]
     simp only [instA, Nat.unpair_pair]
   have hidcount : tc (pair cAliveId cAliveCount) (Nat.pair inst j) ≤ 20 := by
@@ -594,7 +598,7 @@ private theorem tc_cAliveLoop_raw (inst j : ℕ) (hw : WFBits inst) :
       = (aliveStepFn (jA (Nat.pair inst j)))^[i] (aliveInitAcc (readData (instA (Nat.pair inst j))))
       from val_cAliveLoop_raw (Nat.pair inst j) i]
     rw [hiv, hjv]
-    obtain ⟨hlbl, hfeat⟩ := visited_bits_A inst j i hw hi
+    obtain ⟨hlbl, hfeat⟩ := visited_bits_aliveStepFn inst j i hw hi
     have h0 := inv_a0A_le_one j (readData inst) i
     have h1 := inv_a1A_le_one j (readData inst) i
     have hfeat' : featOf (headL (exSufA ((aliveStepFn j)^[i] (aliveInitAcc (readData inst)))))
@@ -618,7 +622,7 @@ private theorem tc_cAliveLoop_raw (inst j : ℕ) (hw : WFBits inst) :
 `rejectsVal inst e` is `1` iff some surviving literal is violated by `e`. Packed input
 `M = ⟨inst, e⟩`; accumulator a single bit. Unlike CJ-A, the step genuinely needs the round index
 (the feature `i` it is currently examining), so it is characterised directly off `val (prec …)`
-(mirroring `OneDL`'s own `svAcc`/`flAcc`) rather than via `Function.iterate`. -/
+(mirroring `DecisionList`'s own `svAcc`/`flAcc`) rather than via `Function.iterate`. -/
 
 /-- The instance, from the packed input `⟨inst, e⟩`. -/
 private def instB (M : ℕ) : ℕ := M.unpair.1
@@ -670,7 +674,8 @@ private theorem rfindFree_cRejStep : RfindFree cRejStep := by
   simp only [cRejStep, cViolB, cViol0B, cViol1B, cAlive0B, cAlive1B, cAliveArgB, cFeatB, cFvB,
     cExStepB, cInstStepB, cSeedB, cIB, cAccB, cHeadL, cAnd, cOr, cNot, cIsPos, cShape0, cSwap,
     isPosCore, notCore, orCore, cPeel, cTailStep, constCode, cReadA0, cReadA1,
-    cAliveLoop, cAliveInit, cAliveStep, cA0'A, cA1'A, cSafe0A, cSafe1A, cCurLblA, cCurFeatA, cFvCurA,
+    cAliveLoop, cAliveInit, cAliveStep, cA0'A, cA1'A, cSafe0A, cSafe1A, cCurLblA, cCurFeatA,
+        cFvCurA,
     cCurExA, cExSufA, cA0A, cA1A, cAccA, cJaA, cJA, cTailL, cAliveId, cAliveCount, cReadM, cInstA,
     cDataA, RfindFree, and_self]
 
@@ -680,9 +685,11 @@ private theorem val_cIB (a i acc : ℕ) : val cIB (Nat.pair a (Nat.pair i acc)) 
   simp only [cIB, val_comp, val_left, val_right, Nat.unpair_pair]
 private theorem val_cSeedB (a i acc : ℕ) : val cSeedB (Nat.pair a (Nat.pair i acc)) = a := by
   simp only [cSeedB, val_left, Nat.unpair_pair]
-private theorem val_cInstStepB (a i acc : ℕ) : val cInstStepB (Nat.pair a (Nat.pair i acc)) = instB a := by
+private theorem val_cInstStepB (a i acc : ℕ) : val cInstStepB (Nat.pair a (Nat.pair i acc)) =
+    instB a := by
   simp only [cInstStepB, val_comp, val_left, val_cSeedB, instB]
-private theorem val_cExStepB (a i acc : ℕ) : val cExStepB (Nat.pair a (Nat.pair i acc)) = exB a := by
+private theorem val_cExStepB (a i acc : ℕ) : val cExStepB (Nat.pair a (Nat.pair i acc)) = exB a :=
+    by
   simp only [cExStepB, val_comp, val_right, val_cSeedB, exB]
 private theorem val_cAliveArgB (a i acc : ℕ) :
     val cAliveArgB (Nat.pair a (Nat.pair i acc)) = Nat.pair (instB a) i := by
@@ -704,7 +711,7 @@ private theorem val_cRejStep (a i acc : ℕ) :
     val_cAccB, val_cAlive0B, val_cAlive1B, val_cFeatB, rejStepFn, violatedFn]
 
 /-- **CJ-B's accumulator**, characterised directly off `val (prec …)` — the round index is
-genuinely needed by the step, so this mirrors `OneDL`'s own `svAcc`/`flAcc` rather than
+genuinely needed by the step, so this mirrors `DecisionList`'s own `svAcc`/`flAcc` rather than
 `Function.iterate`. -/
 def rejAcc (M t : ℕ) : ℕ := val (prec cRejBase cRejStep) (Nat.pair M t)
 
@@ -727,7 +734,8 @@ private theorem rfindFree_cRejCount : RfindFree cRejCount := ⟨rfindFree_cReadK
 private theorem rfindFree_cRejId : RfindFree cRejId := ⟨trivial, trivial⟩
 private theorem rfindFree_cRejBase : RfindFree cRejBase := trivial
 
-private theorem val_cInstOfB (M : ℕ) : val cInstOfB M = instB M := by simp only [cInstOfB, val_left, instB]
+private theorem val_cInstOfB (M : ℕ) : val cInstOfB M = instB M := by
+    simp only [cInstOfB, val_left, instB]
 private theorem val_cRejCount (M : ℕ) : val cRejCount M = readK (instB M) := by
   simp only [cRejCount, val_comp, val_cReadK, val_cInstOfB]
 private theorem val_cRejId (M : ℕ) : val cRejId M = M := by
@@ -800,12 +808,14 @@ private theorem tc_cIB_le (a i acc : ℕ) : tc cIB (Nat.pair a (Nat.pair i acc))
   simp only [cIB, tc_comp, tc_left, tc_right]; omega
 private theorem tc_cSeedB_le (a i acc : ℕ) : tc cSeedB (Nat.pair a (Nat.pair i acc)) ≤ 1 := by
   simp only [cSeedB, tc_left]; omega
-private theorem tc_cInstStepB_le (a i acc : ℕ) : tc cInstStepB (Nat.pair a (Nat.pair i acc)) ≤ 5 := by
+private theorem tc_cInstStepB_le (a i acc : ℕ) : tc cInstStepB (Nat.pair a (Nat.pair i acc)) ≤ 5 :=
+    by
   have := tc_cSeedB_le a i acc; simp only [cInstStepB, tc_comp, tc_left]; omega
 private theorem tc_cExStepB_le (a i acc : ℕ) : tc cExStepB (Nat.pair a (Nat.pair i acc)) ≤ 5 := by
   have := tc_cSeedB_le a i acc; simp only [cExStepB, tc_comp, tc_right]; omega
 
-private theorem tc_cAliveArgB_le (a i acc : ℕ) : tc cAliveArgB (Nat.pair a (Nat.pair i acc)) ≤ 15 := by
+private theorem tc_cAliveArgB_le (a i acc : ℕ) : tc cAliveArgB (Nat.pair a (Nat.pair i acc)) ≤ 15 :=
+    by
   have h1 := tc_cInstStepB_le a i acc
   have h2 := tc_cIB_le a i acc
   simp only [cAliveArgB, tc_pair]
@@ -828,16 +838,19 @@ private theorem tc_cAlive1B_le (a i acc : ℕ) (hw : WFBits (instB a)) :
   simp only [cAlive1B, tc_comp, val_cAliveArgB]
   omega
 
-private theorem val_cAlive0B_le_one (a i acc : ℕ) : val cAlive0B (Nat.pair a (Nat.pair i acc)) ≤ 1 := by
+private theorem val_cAlive0B_le_one (a i acc : ℕ) : val cAlive0B (Nat.pair a (Nat.pair i acc)) ≤
+    1 := by
   rw [val_cAlive0B]; exact aliveVal0_le_one _ _
-private theorem val_cAlive1B_le_one (a i acc : ℕ) : val cAlive1B (Nat.pair a (Nat.pair i acc)) ≤ 1 := by
+private theorem val_cAlive1B_le_one (a i acc : ℕ) : val cAlive1B (Nat.pair a (Nat.pair i acc)) ≤
+    1 := by
   rw [val_cAlive1B]; exact aliveVal1_le_one _ _
 
 private theorem tc_cFvB_le (a i acc : ℕ) : tc cFvB (Nat.pair a (Nat.pair i acc)) ≤ 10 := by
   have := tc_cExStepB_le a i acc; simp only [cFvB, tc_comp, tc_right]; omega
 
 /-- **The feature read: the one value-scaling cost, `O(i)`.** -/
-private theorem tc_cFeatB_le (a i acc : ℕ) : tc cFeatB (Nat.pair a (Nat.pair i acc)) ≤ 8 * i + 40 := by
+private theorem tc_cFeatB_le (a i acc : ℕ) : tc cFeatB (Nat.pair a (Nat.pair i acc)) ≤ 8 * i + 40 :=
+    by
   have hfv := tc_cFvB_le a i acc
   have hia := tc_cIB_le a i acc
   have hpeel := tc_cPeel_le (val cFvB (Nat.pair a (Nat.pair i acc)))
@@ -921,7 +934,8 @@ private theorem tc_cRejLoop_raw (M : ℕ) (hw : WFBits (instB M)) (hqb : ∀ i, 
     have hacc : rejAcc M i ≤ 1 := inv_rejAcc_le_one M i
     have hqbi : featOf (exB M) i ≤ 1 := hqb i
     have hraw := tc_cRejStep_le M i (rejAcc M i) hacc hw hqbi
-    have hmono : (16 * i + 1501) * readM (instB M) ≤ (16 * readK (instB M) + 1501) * readM (instB M) :=
+    have hmono : (16 * i + 1501) * readM (instB M) ≤ (16 * readK (instB M) + 1501) *
+        readM (instB M) :=
       Nat.mul_le_mul_right _ (by omega)
     unfold rejAcc at hraw
     omega
@@ -939,7 +953,7 @@ private theorem tc_cRejLoop_raw (M : ℕ) (hw : WFBits (instB M)) (hqb : ∀ i, 
 /-! ## Stage CJ-C — the assembled decider, an `m`-round AND-fold over the examples
 
 `conjDecideVal inst` is `1` iff every example is labelled `1` or rejected by the surviving set —
-[SQ] §4's *General form* elimination decider, made computable. The packed input IS `inst` itself
+the elimination decider, made computable. The packed input IS `inst` itself
 (no extra pairing): the step needs no round-dependent parameter beyond the fixed instance, so — like
 CJ-A — it is realised via `Function.iterate` over a carried example suffix. -/
 
@@ -991,14 +1005,16 @@ private theorem rfindFree_cjStep : RfindFree cjStep := by
     cRejLoop, cRejBase, cRejStep, cRejId, cRejCount, cInstOfB, cReadK, cViolB, cViol0B, cViol1B,
     cAlive0B, cAlive1B, cAliveArgB, cFeatB, cFvB, cExStepB, cInstStepB, cSeedB, cIB, cAccB,
     cReadA0, cReadA1, cAliveLoop, cAliveInit, cAliveStep, cA0'A, cA1'A, cSafe0A, cSafe1A, cCurLblA,
-    cCurFeatA, cFvCurA, cCurExA, cExSufA, cA0A, cA1A, cAccA, cJaA, cJA, cAliveId, cAliveCount, cReadM,
+    cCurFeatA, cFvCurA, cCurExA, cExSufA, cA0A, cA1A, cAccA, cJaA, cJA, cAliveId, cAliveCount,
+        cReadM,
     cInstA, cDataA, RfindFree, and_self]
 
 private theorem val_cInstC (a i acc : ℕ) : val cInstC (Nat.pair a (Nat.pair i acc)) = a := by
   simp only [cInstC, val_left, Nat.unpair_pair]
 private theorem val_cAccC (a i acc : ℕ) : val cAccC (Nat.pair a (Nat.pair i acc)) = acc := by
   simp only [cAccC, val_comp, val_right, Nat.unpair_pair]
-private theorem val_cExSufC (a i acc : ℕ) : val cExSufC (Nat.pair a (Nat.pair i acc)) = exSufC acc := by
+private theorem val_cExSufC (a i acc : ℕ) : val cExSufC (Nat.pair a (Nat.pair i acc)) =
+    exSufC acc := by
   simp only [cExSufC, val_comp, val_left, val_cAccC, exSufC]
 private theorem val_cVC (a i acc : ℕ) : val cVC (Nat.pair a (Nat.pair i acc)) = vC acc := by
   simp only [cVC, val_comp, val_right, val_cAccC, vC]
@@ -1057,14 +1073,15 @@ private theorem val_cjId (n : ℕ) : val cjId n = n := by
   simp only [cjId, val_pair, val_left, val_right, Nat.pair_unpair]
 private theorem val_cjCount (n : ℕ) : val cjCount n = readM n := by
   simp only [cjCount, val_cReadM]
-private theorem val_cReadVC (acc : ℕ) : val cReadVC acc = vC acc := by simp only [cReadVC, val_right, vC]
+private theorem val_cReadVC (acc : ℕ) : val cReadVC acc = vC acc := by
+    simp only [cReadVC, val_right, vC]
 
 private theorem val_cjLoop (n : ℕ) : val cjLoop n = cjAcc n := by
   rw [cjLoop, val_comp, val_pair, val_cjId, val_cjCount, val_cjLoop_raw, cjAcc]
 
 /-- **CJ-C's public value law.** Exposed as a plain equation from the whole `Code` composition down
-to `conjDecideVal` — no private internals needed by any consumer (the fix this target exists to
-apply from the start, rather than after the fact as in T41). -/
+to `conjDecideVal` — no private internals needed by any consumer (a public
+equation lemma from the start, rather than after the fact). -/
 theorem val_cConjSolve (n : ℕ) : val cConjSolve n = conjDecideVal n := by
   rw [cConjSolve, val_comp, val_cjLoop, val_cReadVC, conjDecideVal]
 
@@ -1086,7 +1103,8 @@ private theorem inv_exSufC_peel (inst : ℕ) :
         ih]
       simp only [peel, Function.iterate_succ_apply']
 
-private theorem inv_vC_le_one (inst : ℕ) : ∀ t, vC ((cjStepFn inst)^[t] (cjInitAcc (readData inst))) ≤ 1 := by
+private theorem inv_vC_le_one (inst : ℕ) : ∀ t,
+    vC ((cjStepFn inst)^[t] (cjInitAcc (readData inst))) ≤ 1 := by
   intro t
   cases t with
   | zero => simp [cjInitAcc, vC]
@@ -1097,13 +1115,13 @@ private theorem inv_vC_le_one (inst : ℕ) : ∀ t, vC ((cjStepFn inst)^[t] (cjI
 
 /-- **Visited-state bit-ness.** At every visited example `i < readM inst`, the label and every
 feature are bits (`WFBits`). -/
-private theorem visited_bits_C (inst i : ℕ) (hw : WFBits inst) (hi : i < readM inst) :
+private theorem visited_bits_cjStepFn (inst i : ℕ) (hw : WFBits inst) (hi : i < readM inst) :
     lblOf (headL (exSufC ((cjStepFn inst)^[i] (cjInitAcc (readData inst))))) ≤ 1 ∧
     (∀ j, featOf (headL (exSufC ((cjStepFn inst)^[i] (cjInitAcc (readData inst))))) j ≤ 1) := by
   rw [inv_exSufC_peel]
   obtain ⟨_hwf, exs, hdeq, hdlen, hlbl, hfeat⟩ := hw
   have hie : i < exs.length := by rw [hdlen]; exact hi
-  rw [hdeq, getExample_encode exs i hie]
+  rw [hdeq, get_example_encode exs i hie]
   exact ⟨hlbl _ (List.getElem_mem hie), fun j => hfeat _ (List.getElem_mem hie) j⟩
 
 private theorem tc_cInstC_le (a i acc : ℕ) : tc cInstC (Nat.pair a (Nat.pair i acc)) ≤ 3 := by
@@ -1180,7 +1198,7 @@ private theorem tc_cjStep_le (a i acc : ℕ) (hv : vC acc ≤ 1) (hw : WFBits a)
 /-- **`cConjSolve`'s native cost on a well-formed instance** — an EXPLICIT polynomial in the example
 count `m = readM inst` and the feature count `k = readK inst` (unsimplified: a fresh CJ-B call,
 itself dominated by two fresh CJ-A calls, run once per example, giving the poly(m,k) analogue of
-`OneDL.tc_cSolve_raw`). -/
+`DecisionList.tc_cSolve_raw`). -/
 theorem tc_cConjSolve_raw (inst : ℕ) (hw : WFBits inst) :
     tc cConjSolve inst
       ≤ (((2 * ((16 * readK inst + 1501) * readM inst) + 16 * readK inst + 2001) * readK inst
@@ -1198,7 +1216,7 @@ theorem tc_cConjSolve_raw (inst : ℕ) (hw : WFBits inst) :
     rw [show val (prec cjInit cjStep) (Nat.pair inst i)
       = (cjStepFn inst)^[i] (cjInitAcc (readData inst)) from val_cjLoop_raw inst i]
     have hv := inv_vC_le_one inst i
-    obtain ⟨hqbl, hqb⟩ := visited_bits_C inst i hw hi
+    obtain ⟨hqbl, hqb⟩ := visited_bits_cjStepFn inst i hw hi
     exact tc_cjStep_le inst i _ hv hw hqbl hqb
   have hprec := tc_prec_le' (cf := cjInit) (cg := cjStep) (a := inst)
     (B := (2 * ((16 * readK inst + 1501) * readM inst) + 16 * readK inst + 2001) * readK inst
@@ -1281,7 +1299,7 @@ theorem conjDecideVal_ne_zero_iff (inst : ℕ) (exs : List ℕ)
     simp only [cjInitAcc]
     rw [hdeq, ← hdlen, cjStepFn_iterate]
     simp only [vC, Nat.unpair_pair]
-  rw [hval, andFold_ne_zero_iff]
+  rw [hval, and_fold_ne_zero_iff]
   simp only [ne_eq, one_ne_zero, not_false_eq_true, true_and, bitOr_ne_zero]
 
 theorem conjDecideVal_le_one (inst : ℕ) : conjDecideVal inst ≤ 1 := by
@@ -1295,11 +1313,11 @@ theorem conjDecideVal_le_one (inst : ℕ) : conjDecideVal inst ≤ 1 := by
       simp only [cjStepFn, vC, Nat.unpair_pair]
       exact bitAnd_le_one _ _
 
-/-- **`polyTime_conjSolve`.** The elimination decider is poly-time on the honest well-formed
+/-- **`polyTime_conj_solve`.** The elimination decider is poly-time on the honest well-formed
 domain: `cConjSolve` computes it (`val_cConjSolve`), its native cost is `PolyBoundedOn`
 (`tc_cConjSolve_raw`, bundled into a single power of `Nat.size`), and its output is a bit, hence
 trivially poly-bit. -/
-theorem polyTime_conjSolve : PolyTimeOn ConjWF conjDecideVal := by
+theorem polyTime_conj_solve : PolyTimeOn ConjWF conjDecideVal := by
   refine ⟨cConjSolve, rfindFree_cConjSolve, fun n _ => val_cConjSolve n,
     polyBoundedOn_tc_cConjSolve, ?_⟩
   refine ⟨2, 0, fun n _ => ?_⟩
@@ -1314,8 +1332,8 @@ theorem polyTime_conjSolve : PolyTimeOn ConjWF conjDecideVal := by
 The witnessed literal set for the `⇐` direction: every surviving literal, over both polarities. A
 `Prop`-level construction used only for the existence proof — the decider itself never builds it. -/
 
-/-- The surviving literals over feature `j`: `⟨j,0⟩` if it survives, `⟨j,1⟩` if it survives, neither,
-either, or both. -/
+/-- The surviving literals over feature `j`: `⟨j,0⟩` if it survives, `⟨j,1⟩` if it survives,
+neither, either, or both. -/
 private def survivorsAt (inst j : ℕ) : List ℕ :=
   (if aliveVal0 inst j ≠ 0 then [Nat.pair j 0] else []) ++
     (if aliveVal1 inst j ≠ 0 then [Nat.pair j 1] else [])
@@ -1373,7 +1391,7 @@ private theorem survivors_litJ_lt (inst r : ℕ) (hr : r ∈ survivors inst) : l
   rcases (mem_survivors_iff inst r).mp hr with ⟨_, _, h⟩ | ⟨_, _, h⟩ <;> exact h
 
 /-- **`conj_decides`.** The elimination decider's verdict holds iff a consistent conjunction over
-valid feature literals exists — [SQ] §4's *General form* elimination algorithm, machine-checked.
+valid feature literals exists — the elimination algorithm, machine-checked.
 The mathematical content: `survivors inst` is the most specific conjunction consistent with the
 labelled-`1` examples (`aliveVal0_iff`/`aliveVal1_iff`), every consistent member's literals are a
 subset of it (via the same characterisation, run in reverse), and it is therefore itself consistent
@@ -1468,16 +1486,18 @@ theorem conj_decides (inst : ℕ) (exs : List ℕ)
 Each guard **fails `lake build`** if the theorem's axiom set ever drifts from the standard
 `[propext, Classical.choice, Quot.sound]`. -/
 
-/-- info: 'Conj.conj_decides' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Conjunction.conj_decides' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs (whitespace := lax) in
 #print axioms conj_decides
 
-/-- info: 'Conj.tc_cConjSolve_raw' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+set_option linter.style.longLine false in
+/-- info: 'Conjunction.tc_cConjSolve_raw' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs (whitespace := lax) in
 #print axioms tc_cConjSolve_raw
 
-/-- info: 'Conj.polyTime_conjSolve' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+set_option linter.style.longLine false in
+/-- info: 'Conjunction.polyTime_conj_solve' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs (whitespace := lax) in
-#print axioms polyTime_conjSolve
+#print axioms polyTime_conj_solve
 
-end Conj
+end Conjunction

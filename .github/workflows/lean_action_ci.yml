@@ -70,10 +70,12 @@ jobs:
           key: deps-${{ runner.os }}-${{ hashFiles('lean-toolchain') }}-${{ hashFiles('lake-manifest.json') }}
           restore-keys: |
             deps-${{ runner.os }}-${{ hashFiles('lean-toolchain') }}-
+      # Warnings are errors (`--wfail`), the Lean community's standard: a linter
+      # warning is fixed in the source, never suppressed at file level.
       - uses: leanprover/lean-action@v1
         with:
           use-github-cache: false
-          build-args: "${{ env.ROOTS }}"
+          build-args: "--wfail ${{ env.ROOTS }}"
       # Whole-library axiom audit, run BEFORE the expensive docs step so a
       # violation fails fast. It checks EVERY declaration under each root — not only
       # the guarded capstones — against the same allowlist, so a `sorry`, a

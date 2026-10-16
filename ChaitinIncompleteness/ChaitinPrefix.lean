@@ -1,21 +1,14 @@
-/-
-Copyright (c) 2026 Mykola Palamarchuk. All rights reserved.
-Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Mykola Palamarchuk
--/
 module
 
 public import ChaitinIncompleteness.ChaitinIncompleteness
 public import CodeLayer.BitStringPrimrec
+public import CodeLayer.SerializationParse
 public import AIT.CodingTheoremBitwise
 
--- Formal-check file, not Mathlib-destined: opt out of the house-style header linter.
-set_option linter.style.header false
-
 /-!
-# Chaitin's incompleteness theorem, additive form on a prefix machine ([Decoupling] §6.6)
+# Chaitin's incompleteness theorem, additive form on a prefix machine
 
-Provenance: [Decoupling] §6.6's closing paragraph, over the prefix complexity `KB` of
+Over the prefix complexity `KB` of
 `AIT/PrefixMachine.lean` in place of the index bit-length `K_bitlen` of
 `ChaitinIncompleteness/ChaitinIncompleteness.lean`. That module's closing paragraph reads: "The
 constant is named, not numeric: the bit-length of a fixed point Kleene's recursion theorem supplies
@@ -23,26 +16,27 @@ existentially, and nothing here relates it to the description length of `T` itse
 closes that boundary: on `KB`, a theory's own enumerator is charged at its OWN prefix complexity, so
 the bound is additive in the theory's description length, `elen c₀` fixed once for every theory.
 
-Status: conditional on two leaf propositions that enter as explicit hypotheses and are not
+Status: conditional on two premises that enter as explicit hypotheses and are not
 proved here: `EParserSpec` (a computable, self-delimiting parser recovering a serialized
 machine and its trailing argument from a `KB`-description) and `REPred kleB` (the Chaitin
 predicate on `KB`'s coded pairs is computably enumerable) — each proved in its own companion
 module.
 
 ## What this establishes
-* `EParserSpec`, `kleB`, `kleB_iff` — the leaf statement and the predicate, read at a coded pair as
+* `kleB`, `kleB_iff` — the predicate (the parser specification `EParserSpec` is
+  `CodeLayer/SerializationParse.lean`'s), read at a coded pair as
   `KB s ≤ n`, exactly as `kle`/`kle_iff` in `ChaitinIncompleteness/ChaitinIncompleteness.lean` read
   `K_bitlen s ≤ n`.
 * `chaitinSentenceB`, `models_chaitinSentenceB_iff` — the sentence "`KB(s) > n`", `kle`'s twin
   at `KB`, given `REPred kleB` as a hypothesis rather than proved in-file.
-* `rePred_provable_chaitinB`, `chaitin_soundB` — the theory-relative steps, from `[T.Δ₁]`
+* `rePred_provable_chaitin_KB`, `chaitin_sound_KB` — the theory-relative steps, from `[T.Δ₁]`
   alone, respectively `[𝗥₀ ⪯ T]` and consistency alone, mirroring the `K_bitlen` layer line
   for line.
 * `chaitin_bound_KB_of`, `chaitin_bound_KB_of_min` — the abstract Berry bound, given
   `EParserSpec`: a computably enumerable relation asserting only true `KB` bounds is bounded
   by `elen c₀ + (elen d + q.length)` at every description `(d, q)` of the enumerator's own
   code, hence by `elen c₀ + KB (Encodable.encode e)`.
-* `chaitin_theoremB_of`, `chaitin_theoremB_of_RE` — the theory-relative form, at `[T.Δ₁]`
+* `chaitin_theorem_KB_of`, `chaitin_theorem_KB_of_RE` — the theory-relative form, at `[T.Δ₁]`
   respectively `[T.RE]` (transported through Foundation's `T.craig`): the constant is
   `elen c₀ + KB (Encodable.encode e)`, `elen c₀` fixed once for every theory and
   `KB (Encodable.encode e)` the theory's OWN prefix complexity through its enumerator —
@@ -66,19 +60,11 @@ namespace KolmogorovComplexity
 open Nat.Partrec Nat.Partrec.Code AdditiveComplexity PrefixMachine
 open FFL.FirstOrder FFL.FirstOrder.Arithmetic
 
-/-! ## The two leaf propositions -/
-
-/-- **The parser specification.** A computable parser recovering a serialized machine `e` and its
-trailing argument `r` from any description `E e ++ r` — and ONLY from a description of that
-shape. -/
-def EParserSpec : Prop :=
-  ∃ parse : List Bool → Option (Code × List Bool), Primrec parse ∧
-    (∀ e r, parse (E e ++ r) = some (e, r)) ∧
-    (∀ w e r, parse w = some (e, r) → w = E e ++ r)
+/-! ## The predicate -/
 
 /-- **The predicate.** "The prefix complexity of `(Nat.unpair a).1` is at most
 `(Nat.unpair a).2`" — `kle`'s twin at `KB` in place of `K_bitlen`. `REPred kleB`, the second
-leaf proposition, enters below as an explicit hypothesis rather than a proof in this file. -/
+premise, enters below as an explicit hypothesis rather than a proof in this file. -/
 def kleB (a : ℕ) : Prop := KB (Nat.unpair a).1 ≤ (Nat.unpair a).2
 
 theorem kleB_iff (s n : ℕ) : kleB (Nat.pair s n) ↔ KB s ≤ n := by
@@ -108,7 +94,7 @@ open FFL.Entailment Bootstrapping Bootstrapping.Arithmetic FFL.FirstOrder.Boundi
 the substituted numeral, is recursively enumerable — needs only `[T.Δ₁]`, exactly as
 `rePred_provable_chaitin`; no `REPred kleB` hypothesis is needed here either, since the
 argument is purely about `T`'s own provability predicate being Σ₁-definable. -/
-theorem rePred_provable_chaitinB :
+theorem rePred_provable_chaitin_KB :
     REPred fun a : ℕ => T ⊢ chaitinSentenceB (Nat.unpair a).1 (Nat.unpair a).2 := by
   have heq : (fun a : ℕ => T ⊢ chaitinSentenceB (Nat.unpair a).1 (Nat.unpair a).2) =
       fun a : ℕ => T ⊢ ∼(codeOfREPred kleB)/[a] := by
@@ -127,9 +113,9 @@ theorem rePred_provable_chaitinB :
 omit [T.Δ₁] in
 /-- `T`'s consistency makes every provable Chaitin-on-`KB` sentence true, given `REPred
 kleB` — the `KB` twin of `chaitin_sound`, needing only `[𝗥₀ ⪯ T]` and consistency (through
-`sigma_one_completeness`), plus the leaf hypothesis to invoke
+`sigma_one_completeness`), plus the premise to invoke
 `models_chaitinSentenceB_iff`. -/
-theorem chaitin_soundB (hre : REPred kleB) (s n : ℕ) (h : T ⊢ chaitinSentenceB s n) :
+theorem chaitin_sound_KB (hre : REPred kleB) (s n : ℕ) (h : T ⊢ chaitinSentenceB s n) :
     n < KB s := by
   by_contra hcon
   push Not at hcon
@@ -390,7 +376,7 @@ theorem chaitin_bound_KB_of_min (hparse : EParserSpec) :
 constant `elen c₀ + KB (Encodable.encode e)` splits into a FIXED part (`elen c₀`, one Berry
 program for every theory) and the theory's OWN prefix complexity, through any enumerator `e`
 of its provable sentences of this form. -/
-theorem chaitin_theoremB_of (hparse : EParserSpec) (hre : REPred kleB) :
+theorem chaitin_theorem_KB_of (hparse : EParserSpec) (hre : REPred kleB) :
     ∃ c₀ : Code, ∀ (T : ArithmeticTheory) [T.Δ₁] [𝗥₀ ⪯ T] [FFL.Entailment.Consistent T]
       (e : Code),
       (∀ a, (e.eval a).Dom ↔ T ⊢ chaitinSentenceB (Nat.unpair a).1 (Nat.unpair a).2) →
@@ -404,18 +390,18 @@ theorem chaitin_theoremB_of (hparse : EParserSpec) (hre : REPred kleB) :
     intro s' n' hdom'
     have hprov' := (henum (Nat.pair s' n')).mp hdom'
     rw [Nat.unpair_pair] at hprov'
-    exact chaitin_soundB T hre s' n' hprov'
+    exact chaitin_sound_KB T hre s' n' hprov'
   exact hc₀ e hsound s n hdomsn
 
 /-- **Transported to any recursively enumerable, consistent extension of `𝗥₀`**, via
 Foundation's `T.craig`, exactly as `chaitin_theorem_of_RE` — the SAME constant,
 `T.craig ≊ T`. -/
-theorem chaitin_theoremB_of_RE (hparse : EParserSpec) (hre : REPred kleB) :
+theorem chaitin_theorem_KB_of_RE (hparse : EParserSpec) (hre : REPred kleB) :
     ∃ c₀ : Code, ∀ (T : ArithmeticTheory) [T.RE] [𝗥₀ ⪯ T] [FFL.Entailment.Consistent T]
       (e : Code),
       (∀ a, (e.eval a).Dom ↔ T ⊢ chaitinSentenceB (Nat.unpair a).1 (Nat.unpair a).2) →
       ∀ s n, T ⊢ chaitinSentenceB s n → n < elen c₀ + KB (Encodable.encode e) := by
-  obtain ⟨c₀, hc₀⟩ := chaitin_theoremB_of hparse hre
+  obtain ⟨c₀, hc₀⟩ := chaitin_theorem_KB_of hparse hre
   refine ⟨c₀, fun T => ?_⟩
   intro _ _ _ e henum s n h
   have henum' : ∀ a, (e.eval a).Dom ↔

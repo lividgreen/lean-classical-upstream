@@ -1,27 +1,20 @@
-/-
-Copyright (c) 2026 Mykola Palamarchuk. All rights reserved.
-Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Mykola Palamarchuk
--/
 module
 
 public import Learning.DecisionListSolver
 
--- Formal-check file, not Mathlib-destined: opt out of the house-style linters.
-set_option linter.style.header false
-set_option linter.style.longLine false
 
 /-!
 # The version-space (forced-symbol) predictor for 1-decision lists
 
-Provenance: [SQ] §4, Corollary 4.3(b). The consistency decider `OneDL.cSolve`
-(`Learning/DecisionListSolver.lean`) decides 1-DL consistency; this module reads its decision off as a
+The consistency decider `DecisionList.cSolve` (`Learning/DecisionListSolver.lean`) decides 1-DL
+(Rivest 1987) consistency; this module reads its decision off as a
 computed value (Stage A), extends an instance by one candidate example (Stage B), and composes two
-such decisions into the two-consistency-call forced-symbol predictor the corollary's read-off
+such decisions into the two-consistency-call forced-symbol predictor the read-off
 describes (Stage C): append each candidate next-symbol as a constraint, and the symbol whose
 appended constraint leaves every consistent 1-DL in agreement is the prediction.
 
-**Stage A** turns `OneDL.solve_decides`'s Prop-valued decision into a computed bit (`cDecide`,
+**Stage A** turns `DecisionList.solve_decides`'s Prop-valued decision into a computed bit
+(`cDecide`,
 `decideVal`, `decide_iff`). **Stage B** extends a solver instance by one candidate example
 (`mkEx`, `extInst`, `extPacked`) and proves the one genuinely new combinatorial fact the
 two-call read-off rests on: a decision list whose value at a point is not itself a bit can always
@@ -35,16 +28,18 @@ native-cost bound (`tc_forced_raw`) and a `PolyTimeOn` closure (`polyTime_forced
 
 @[expose] public section
 
-namespace OneDL
+namespace DecisionList
 
 open Nat.Partrec (Code)
 open Nat.Partrec.Code
 open TimeCost
+open BitGates
 
 /-! ## Stage A — the consistency decider as a computed bit
 
 `cAllZero` scans the first `m` cells of a mask and reports whether every one of them is zero — the
-`Code` form of `OneDL.solve_decides`'s `∀ i, i < m → headL (peel M i) = 0` hypothesis. Composed with
+`Code` form of `DecisionList.solve_decides`'s `∀ i, i < m → headL (peel M i) = 0` hypothesis.
+Composed with
 `cSolve`'s mask output, it reads the greedy solver's Prop-valued verdict off as a bit (`cDecide`).
 -/
 
@@ -52,8 +47,8 @@ open TimeCost
 
 Accumulator `⟨maskSuf, flag⟩`: `maskSuf` starts at the mask and is peeled one cell per round; `flag`
 starts at `1` and is `AND`-folded with the negation of each visited head bit, so it survives as `1`
-iff every visited cell was `0`. The scan needs no `WFBits`/`MaskValid` hypothesis for its cost bound —
-`bAnd`/`bNot` normalize to a bit for ANY input, magnitude-independent. -/
+iff every visited cell was `0`. The scan needs no `WFBits`/`MaskValid` hypothesis for its cost bound
+— `bAnd`/`bNot` normalize to a bit for ANY input, magnitude-independent. -/
 
 /-- Mask suffix field of the emptiness-scan accumulator. -/
 private def azMs (acc : ℕ) : ℕ := acc.unpair.1
@@ -68,9 +63,9 @@ private def azStepFn (acc : ℕ) : ℕ :=
 /-- The initial accumulator: the full mask suffix, flag `1` (vacuously "all zero so far"). -/
 private def azInitAcc (mask : ℕ) : ℕ := Nat.pair mask 1
 
-/-- `headL` as a `Code` (mirrors `OneDL.DecisionListSolver`'s private `cHead`). -/
+/-- `headL` as a `Code` (mirrors `DecisionList.DecisionListSolver`'s private `cHead`). -/
 def cHd : Code := comp left right
-/-- `tailL` as a `Code` (mirrors `OneDL.DecisionListSolver`'s private `cTail`). -/
+/-- `tailL` as a `Code` (mirrors `DecisionList.DecisionListSolver`'s private `cTail`). -/
 def cTl : Code := comp right right
 
 private theorem val_cHd (L : ℕ) : val cHd L = headL L := by
@@ -139,14 +134,15 @@ private theorem val_cAzLoop (N : ℕ) :
     simp only [cIdN, cCountM, val_pair, val_left, val_right, Nat.pair_unpair]
   rw [cAzLoop, val_comp, hpair, val_cAzLoop_raw]
 
-private theorem val_cAllZero (N : ℕ) : val cAllZero N = azFlag (azStepFn^[N.unpair.1] (azInitAcc N.unpair.2)) := by
+private theorem val_cAllZero (N : ℕ) : val cAllZero N =
+    azFlag (azStepFn^[N.unpair.1] (azInitAcc N.unpair.2)) := by
   rw [cAllZero, val_comp, val_cAzLoop]; rfl
 
-/-- `allZeroVal N` on the packed input `N = ⟨m, mask⟩`: `1` iff every one of the first `m` mask cells
-is `0`, `0` otherwise. -/
+/-- `allZeroVal N` on the packed input `N = ⟨m, mask⟩`: `1` iff every one of the first `m` mask
+cells is `0`, `0` otherwise. -/
 def allZeroVal (N : ℕ) : ℕ := val cAllZero N
 
-/-! ### `allZero_iff` — the scan's correctness against the `List` model -/
+/-! ### `all_zero_iff` — the scan's correctness against the `List` model -/
 
 private theorem bAnd_le_one (a b : ℕ) : bAnd a b ≤ 1 := by unfold bAnd; split_ifs <;> simp
 private theorem bNot_le_one (n : ℕ) : bNot n ≤ 1 := by unfold bNot; split <;> simp
@@ -172,7 +168,7 @@ private theorem azStepFn_iterate (z : ℕ) : ∀ bs : List ℕ,
       rw [hx, ih, List.foldl_cons]
 
 /-- The `AND`-negation fold is nonzero iff the seed is, and every element of the list is `0`. -/
-private theorem azFold_ne_zero_iff (z : ℕ) : ∀ bs : List ℕ,
+private theorem az_fold_ne_zero_iff (z : ℕ) : ∀ bs : List ℕ,
     (bs.foldl (fun y b => bAnd y (bNot b)) z) ≠ 0 ↔ z ≠ 0 ∧ ∀ b ∈ bs, b = 0 := by
   intro bs
   induction bs generalizing z with
@@ -197,27 +193,28 @@ private theorem forall_getElem_iff_forall_mem (bs : List ℕ) (P : ℕ → Prop)
   · intro h i hi
     exact h bs[i] (List.getElem_mem hi)
 
-/-- **The emptiness scan is correct.** Under `MaskValid`, `allZeroVal ⟨m, mask⟩ ≠ 0` iff every one of
-the first `m` mask cells is `0` — the `Code` form of the hypothesis `OneDL.solve_decides` concludes. -/
-theorem allZero_iff (m mask : ℕ) (h : MaskValid mask m) :
+/-- **The emptiness scan is correct.** Under `MaskValid`, `allZeroVal ⟨m, mask⟩ ≠ 0` iff every one
+of the first `m` mask cells is `0` — the `Code` form of the hypothesis `DecisionList.solve_decides`
+concludes. -/
+theorem all_zero_iff (m mask : ℕ) (h : MaskValid mask m) :
     allZeroVal (Nat.pair m mask) ≠ 0 ↔ ∀ i, i < m → headL (peel mask i) = 0 := by
   obtain ⟨msks, hmeq, hmlen, _hmbit⟩ := h
   have hval : allZeroVal (Nat.pair m mask) = msks.foldl (fun y b => bAnd y (bNot b)) 1 := by
     unfold allZeroVal
     rw [val_cAllZero, Nat.unpair_pair, azInitAcc, hmeq, ← hmlen, azStepFn_iterate]
     simp only [azFlag, Nat.unpair_pair]
-  rw [hval, azFold_ne_zero_iff]
+  rw [hval, az_fold_ne_zero_iff]
   simp only [ne_eq, one_ne_zero, not_false_eq_true, true_and]
   rw [← forall_getElem_iff_forall_mem]
   constructor
   · intro h i hi
     have him : i < msks.length := by rw [hmlen]; exact hi
-    rw [hmeq, getExample_encode msks i him]
+    rw [hmeq, get_example_encode msks i him]
     exact h i him
   · intro h i him
     have hi : i < m := by rw [← hmlen]; exact him
     have := h i hi
-    rwa [hmeq, getExample_encode msks i him] at this
+    rwa [hmeq, get_example_encode msks i him] at this
 
 /-! ### The scan's native cost — magnitude-independent given `MaskValid` -/
 
@@ -245,15 +242,16 @@ private theorem inv_azMs_peel (mask : ℕ) :
           simp only [azStepFn, azMs, Nat.unpair_pair], ih]
       simp only [peel, Function.iterate_succ_apply']
 
-private theorem azHead_visited_le_one (mask m : ℕ) (h : MaskValid mask m) (i : ℕ) (hi : i < m) :
+private theorem az_head_visited_le_one (mask m : ℕ) (h : MaskValid mask m) (i : ℕ) (hi : i < m) :
     headL (azMs (azStepFn^[i] (azInitAcc mask))) ≤ 1 := by
   rw [inv_azMs_peel]
   obtain ⟨msks, hmeq, hmlen, hmbit⟩ := h
   have him : i < msks.length := by rw [hmlen]; exact hi
-  rw [hmeq, getExample_encode msks i him]
+  rw [hmeq, get_example_encode msks i him]
   exact hmbit _ (List.getElem_mem him)
 
-private theorem tc_cAzStep_le (a i acc : ℕ) (hmask : headL (azMs acc) ≤ 1) (hflag : azFlag acc ≤ 1) :
+private theorem tc_cAzStep_le (a i acc : ℕ) (hmask : headL (azMs acc) ≤ 1) (hflag : azFlag acc ≤ 1)
+    :
     tc cAzStep (Nat.pair a (Nat.pair i acc)) ≤ 300 := by
   have hAccT : tc cAzAcc (Nat.pair a (Nat.pair i acc)) ≤ 3 := by
     simp only [cAzAcc, tc_comp, tc_right]; omega
@@ -272,25 +270,29 @@ private theorem tc_cAzStep_le (a i acc : ℕ) (hmask : headL (azMs acc) ≤ 1) (
   have hHeadV : val cAzHead (Nat.pair a (Nat.pair i acc)) = headL (azMs acc) := by
     simp only [cAzHead, val_comp, val_cHd, hMsV]
   have hNotHeadT : tc (comp cNot cAzHead) (Nat.pair a (Nat.pair i acc)) ≤ 22 := by
-    have hnot := tc_cNot_bit (x := val cAzHead (Nat.pair a (Nat.pair i acc))) (by rw [hHeadV]; exact hmask)
+    have hnot := tc_cNot_bit (x := val cAzHead (Nat.pair a (Nat.pair i acc)))
+        (by rw [hHeadV]; exact hmask)
     simp only [tc_comp]; omega
-  have hNotHeadV : val (comp cNot cAzHead) (Nat.pair a (Nat.pair i acc)) = bNot (headL (azMs acc)) := by
+  have hNotHeadV : val (comp cNot cAzHead) (Nat.pair a (Nat.pair i acc)) =
+      bNot (headL (azMs acc)) := by
     simp only [val_comp, val_cNot', hHeadV]
   have hPairT : tc (pair cAzFlag (comp cNot cAzHead)) (Nat.pair a (Nat.pair i acc)) ≤ 28 := by
     have := hFlagT; have := hNotHeadT; simp only [tc_pair]; omega
-  have hAndT : tc cAnd (val (pair cAzFlag (comp cNot cAzHead)) (Nat.pair a (Nat.pair i acc))) ≤ 204 := by
+  have hAndT : tc cAnd (val (pair cAzFlag (comp cNot cAzHead)) (Nat.pair a (Nat.pair i acc))) ≤
+      204 := by
     rw [val_pair, hFlagV, hNotHeadV]
     exact tc_cAnd_bit hflag (bNot_le_one _)
   have hFlag'T : tc cAzFlag' (Nat.pair a (Nat.pair i acc)) ≤ 233 := by
     have := hPairT; have := hAndT; simp only [cAzFlag', tc_comp]; omega
   simp only [cAzStep, tc_pair]; omega
 
-private theorem hAzStep_visited (N : ℕ) (h : MaskValid N.unpair.2 N.unpair.1) :
+private theorem tc_cAzStep_visited_le (N : ℕ) (h : MaskValid N.unpair.2 N.unpair.1) :
     ∀ i, i < N.unpair.1 →
       tc cAzStep (Nat.pair N (Nat.pair i (val (prec cAzInit cAzStep) (Nat.pair N i)))) ≤ 300 := by
   intro i hi
   rw [val_cAzLoop_raw]
-  exact tc_cAzStep_le N i _ (azHead_visited_le_one N.unpair.2 N.unpair.1 h i hi) (azFlag_le_one N.unpair.2 i)
+  exact tc_cAzStep_le N i _ (az_head_visited_le_one N.unpair.2 N.unpair.1 h i hi)
+      (azFlag_le_one N.unpair.2 i)
 
 private theorem tc_cAzInit_le (N : ℕ) : tc cAzInit N ≤ 5 := by
   have := tc_constCode_le 1 N
@@ -303,7 +305,7 @@ private theorem tc_cAllZero_le (N : ℕ) (h : MaskValid N.unpair.2 N.unpair.1) :
     simp only [cIdN, cCountM, val_pair, val_left, val_right, Nat.pair_unpair]
   have hprec : tc (prec cAzInit cAzStep) (Nat.pair N N.unpair.1)
       ≤ tc cAzInit N + (300 + 1) * N.unpair.1 + 1 :=
-    tc_prec_le' N.unpair.1 (hAzStep_visited N h)
+    tc_prec_le' N.unpair.1 (tc_cAzStep_visited_le N h)
   have hinit := tc_cAzInit_le N
   have hidc : tc (pair cIdN cCountM) N ≤ 5 := by
     simp only [cIdN, cCountM, tc_pair, tc_left, tc_right]; omega
@@ -316,20 +318,22 @@ private theorem tc_cAllZero_le (N : ℕ) (h : MaskValid N.unpair.2 N.unpair.1) :
 
 set_option maxHeartbeats 0 in
 -- `Code` equality against a fully spelled-out term is deep, plain-delta defeq checking with no
--- propositional content, so it is slow rather than large — it terminates, just past the default cap.
+-- propositional content, so it is slow rather than large — it terminates, just past the default
+-- cap.
 /-- **`cSolve`'s structure, spelled out.** The only route from the public `cSolve`/`solveVal` to the
-public `svMask`/`svAcc` layer `OneDL.solve_decides` is stated over: `cAssemble`, `cSvLoop`, `cId` and
-`cSvCount` are private to `Learning/DecisionListSolver.lean`, so their wiring is re-derived here instead of
-named. -/
+public `svMask`/`svAcc` layer `DecisionList.solve_decides` is stated over: `cAssemble`, `cSvLoop`,
+`cId` and
+`cSvCount` are private to `Learning/DecisionListSolver.lean`, so their wiring is re-derived here
+instead of named. -/
 private theorem hcode_cSolve : cSolve =
     comp (pair left (comp cReverse (pair (comp right right) (comp left right))))
       (comp (prec cSvInit cSvStep) (pair (pair left right) (comp cReadM left))) := rfl
 
 set_option maxHeartbeats 0 in
--- same slow-not-stuck deep defeq as `hcode_cSolve` above (the closing `rfl` matches `svAcc`/`svMask`
--- against their own unfolding, propositionally trivial but syntactically deep).
-/-- **The bridge.** `solve`'s output mask is `svMask (svAcc n (readM (svInst n)))` — the same quantity
-`OneDL.solve_decides` and `OneDL.output_consistent` speak of. -/
+-- same slow-not-stuck deep defeq as `hcode_cSolve` above (the closing `rfl` matches
+-- `svAcc`/`svMask` against their own unfolding, propositionally trivial but syntactically deep).
+/-- **The bridge.** `solve`'s output mask is `svMask (svAcc n (readM (svInst n)))` — the same
+quantity `DecisionList.solve_decides` and `DecisionList.output_consistent` speak of. -/
 private theorem solveVal_fst_eq (n : ℕ) :
     (solveVal n).unpair.1 = svMask (svAcc n (readM (svInst n))) := by
   unfold solveVal
@@ -337,12 +341,12 @@ private theorem solveVal_fst_eq (n : ℕ) :
     val_left, val_right, Nat.pair_unpair, val_comp, val_left, val_cReadM]
   rfl
 
-/-- **`cDecide`**: `cSolve`'s output mask (the emptiness scan's mask input) fed to `cAllZero`, at the
-scan length `readM (svInst n)`. -/
+/-- **`cDecide`**: `cSolve`'s output mask (the emptiness scan's mask input) fed to `cAllZero`, at
+the scan length `readM (svInst n)`. -/
 def cDecide : Code := comp cAllZero (pair (comp cReadM left) (comp left cSolve))
 
-/-- `decideVal n`: nonzero iff `solve`'s output mask is empty on its first `readM (svInst n)` cells —
-`solve_decides`'s decision, read off as a computed bit. -/
+/-- `decideVal n`: nonzero iff `solve`'s output mask is empty on its first `readM (svInst n)` cells
+— `solve_decides`'s decision, read off as a computed bit. -/
 def decideVal (n : ℕ) : ℕ := val cDecide n
 
 private theorem val_cDecide (n : ℕ) :
@@ -351,15 +355,16 @@ private theorem val_cDecide (n : ℕ) :
   rw [val_comp, val_pair, val_comp, val_cReadM, val_left, val_comp, val_left]
   rfl
 
-/-- **The decision matches `solve_decides`.** Under the same hypothesis block `OneDL.solve_decides`
+/-- **The decision matches `solve_decides`.** Under the same hypothesis block
+`DecisionList.solve_decides`
 carries, `decideVal n` is nonzero iff a consistent `1`-decision list over valid feature literals
-exists — [SQ] §4's cited decider, made computable. -/
+exists — the consistency decider, made computable. -/
 theorem decide_iff (n : ℕ) (hn : SolveWF n) (hk : 0 < readK (svInst n))
     (hone : svMask0 n = encodeList (List.replicate (readM (svInst n)) 1))
     (exs : List ℕ) (hdeq : readData (svInst n) = encodeList exs)
     (hdlen : exs.length = readM (svInst n)) :
     decideVal n ≠ 0 ↔ ExistsConsistentDL (svInst n) exs := by
-  rw [val_cDecide, allZero_iff _ _ (maskValid_solve n hn), solveVal_fst_eq]
+  rw [val_cDecide, all_zero_iff _ _ (maskValid_solve n hn), solveVal_fst_eq]
   exact solve_decides n hn hk hone exs hdeq hdlen
 
 /-! ### `cDecide`'s native cost -/
@@ -405,8 +410,10 @@ def extInst (inst e : ℕ) : ℕ :=
 /-- The packed solver input extended by one candidate example, mask bit prepended active. -/
 def extPacked (n e : ℕ) : ℕ := Nat.pair (extInst (svInst n) e) (Nat.pair 1 (Nat.pair 1 (svMask0 n)))
 
-private theorem lblOf_mkEx (b fv : ℕ) : lblOf (mkEx b fv) = b := by simp [mkEx, lblOf, Nat.unpair_pair]
-private theorem fvOf_mkEx (b fv : ℕ) : fvOf (mkEx b fv) = fv := by simp [mkEx, fvOf, Nat.unpair_pair]
+private theorem lblOf_mkEx (b fv : ℕ) : lblOf (mkEx b fv) = b := by
+    simp [mkEx, lblOf, Nat.unpair_pair]
+private theorem fvOf_mkEx (b fv : ℕ) : fvOf (mkEx b fv) = fv := by
+    simp [mkEx, fvOf, Nat.unpair_pair]
 
 private theorem readK_extInst (inst e : ℕ) : readK (extInst inst e) = readK inst := by
   simp [extInst, readK, Nat.unpair_pair]
@@ -517,7 +524,7 @@ private theorem maskValid_extPacked (n x b : ℕ) (hn : SolveWF n) :
     · exact le_refl 1
     · exact hmbit c hin
 
-private theorem allOnes_extPacked (n x b : ℕ)
+private theorem all_ones_extPacked (n x b : ℕ)
     (hone : svMask0 n = encodeList (List.replicate (readM (svInst n)) 1)) :
     svMask0 (extPacked n (mkEx b x))
       = encodeList (List.replicate (readM (svInst (extPacked n (mkEx b x)))) 1) := by
@@ -679,7 +686,7 @@ theorem exists_relabel (K x : ℕ) (exs : List ℕ) (hlbl : ∀ e ∈ exs, lblOf
 
 /-! ## Stage C — the forced-symbol verdict
 
-Two `decideVal` calls at the query point wrapped with each candidate bit — [SQ] §4's read-off: "append
+Two `decideVal` calls at the query point wrapped with each candidate bit — the read-off: "append
 each candidate next-symbol as a constraint; the symbol whose appended constraint leaves every
 consistent `1`-DL in agreement is the prediction." -/
 
@@ -697,7 +704,8 @@ def cSvMask0P : Code := comp right cN
 def cReadKP : Code := comp cReadK cSvInstP
 /-- `readM (svInst n)`, from `⟨n, x⟩`. -/
 def cReadMP : Code := comp cReadM cSvInstP
-/-- `readData` as a `Code` (mirrors `OneDL.DecisionListSolver`'s private `cData`-style reads). -/
+/-- `readData` as a `Code` (mirrors `DecisionList.DecisionListSolver`'s private `cData`-style
+reads). -/
 def cReadDataC : Code := comp right right
 /-- `readData (svInst n)`, from `⟨n, x⟩`. -/
 def cReadDataP : Code := comp cReadDataC cSvInstP
@@ -745,7 +753,8 @@ def cLabelCore : Code := comp cAnd (pair cFlagCore cD1core)
 /-- The forced flag paired with the forced label, as a `Code`. -/
 def cForcedCore : Code := pair cFlagCore cLabelCore
 
-/-- **`cForced`**: the two-consistency-call forced-symbol predictor, on the packed input `⟨n, x⟩`. -/
+/-- **`cForced`**: the two-consistency-call forced-symbol predictor, on the packed input
+`⟨n, x⟩`. -/
 def cForced : Code := comp cForcedCore cD01
 
 /-- `forcedVal n x`: `⟨1, b⟩` when exactly one of the two extended decisions succeeds (`b` its
@@ -808,7 +817,8 @@ private theorem evalDLn_mkEx_congr (rules : List ℕ) (d b1 b2 x : ℕ) :
 
 /-- **A single extended decision, unfolded.** `decideVal (extPacked n (mkEx b x)) ≠ 0` iff some
 valid decision list, consistent with `exs`, evaluates the query point to `b`. -/
-private theorem dV_iff (n x b : ℕ) (hn : SolveWF n) (hk : 0 < readK (svInst n)) (hb : b ≤ 1)
+private theorem decide_extPacked_iff (n x b : ℕ) (hn : SolveWF n) (hk : 0 < readK (svInst n))
+    (hb : b ≤ 1)
     (hone : svMask0 n = encodeList (List.replicate (readM (svInst n)) 1))
     (hqx : IsList x (readK (svInst n))) (hqbits : ∀ j, headL (peel x j) ≤ 1)
     (exs : List ℕ) (hdeq : readData (svInst n) = encodeList exs)
@@ -819,7 +829,7 @@ private theorem dV_iff (n x b : ℕ) (hn : SolveWF n) (hk : 0 < readK (svInst n)
   have hSW := solveWF_extPacked n x b hn hb hqx hqbits exs hdeq hdlen
   have hk' : 0 < readK (svInst (extPacked n (mkEx b x))) := by
     rw [readK_svInst_extPacked]; exact hk
-  have hone' := allOnes_extPacked n x b hone
+  have hone' := all_ones_extPacked n x b hone
   have hdeq' := readData_svInst_extPacked n x b exs hdeq
   have hdlen' : (mkEx b x :: exs).length = readM (svInst (extPacked n (mkEx b x))) := by
     rw [readM_svInst_extPacked]; simp [hdlen]
@@ -862,7 +872,8 @@ private theorem forced_cases (n x : ℕ) :
 
 /-- From "`b`'s extended call succeeds and the other fails", the classification's content: the truth
 survives and every valid consistent decision list agrees with `b` at the query point. Uses
-`exists_relabel` to rule out a non-bit prediction, and the failing other-bit call to rule out `1-b`. -/
+`exists_relabel` to rule out a non-bit prediction, and the failing other-bit call to rule out
+`1-b`. -/
 private theorem forced_core (n x b : ℕ) (hn : SolveWF n) (hk : 0 < readK (svInst n)) (hb : b ≤ 1)
     (hone : svMask0 n = encodeList (List.replicate (readM (svInst n)) 1))
     (hqx : IsList x (readK (svInst n))) (hqbits : ∀ j, headL (peel x j) ≤ 1)
@@ -875,14 +886,14 @@ private theorem forced_core (n x b : ℕ) (hn : SolveWF n) (hk : 0 < readK (svIn
         evalDLn rules d (mkEx 0 x) = b := by
   have hlbl := (wfbits_exs_bits n hn.1 exs hdeq hdlen).1
   obtain ⟨rules, d, hval, hev, hcons⟩ :=
-    (dV_iff n x b hn hk hb hone hqx hqbits exs hdeq hdlen).mp hbforced
+    (decide_extPacked_iff n x b hn hk hb hone hqx hqbits exs hdeq hdlen).mp hbforced
   refine ⟨⟨rules, d, hval, hcons⟩, ?_⟩
   intro rules' d' hval' hcons'
   by_contra hne
   have hcase : evalDLn rules' d' (mkEx 0 x) = 1 - b ∨
       (evalDLn rules' d' (mkEx 0 x) ≠ 0 ∧ evalDLn rules' d' (mkEx 0 x) ≠ 1) := by omega
   have hother : decideVal (extPacked n (mkEx (1 - b) x)) ≠ 0 := by
-    apply (dV_iff n x (1 - b) hn hk (by omega) hone hqx hqbits exs hdeq hdlen).mpr
+    apply (decide_extPacked_iff n x (1 - b) hn hk (by omega) hone hqx hqbits exs hdeq hdlen).mpr
     rcases hcase with hc | hc
     · refine ⟨rules', d', hval', ?_, hcons'⟩
       rw [evalDLn_mkEx_congr rules' d' (1 - b) 0 x]; exact hc
@@ -908,18 +919,19 @@ private theorem forced_of_unanimous (n x b : ℕ) (hn : SolveWF n) (hk : 0 < rea
   have hevb : evalDLn rules d (mkEx b x) = b := by
     rw [evalDLn_mkEx_congr rules d b 0 x]; exact hev0
   have hbforced : decideVal (extPacked n (mkEx b x)) ≠ 0 :=
-    (dV_iff n x b hn hk hb hone hqx hqbits exs hdeq hdlen).mpr ⟨rules, d, hval, hevb, hconsD⟩
+    (decide_extPacked_iff n x b hn hk hb hone hqx hqbits exs hdeq hdlen).mpr
+      ⟨rules, d, hval, hevb, hconsD⟩
   refine ⟨hbforced, ?_⟩
   by_contra hobforced
   obtain ⟨rules'', d'', hval'', hev'', hcons''⟩ :=
-    (dV_iff n x (1 - b) hn hk (by omega) hone hqx hqbits exs hdeq hdlen).mp hobforced
+    (decide_extPacked_iff n x (1 - b) hn hk (by omega) hone hqx hqbits exs hdeq hdlen).mp hobforced
   have hev0' : evalDLn rules'' d'' (mkEx 0 x) = 1 - b := by
     rw [evalDLn_mkEx_congr rules'' d'' 0 (1 - b) x]; exact hev''
   have := hunanim rules'' d'' hval'' hcons''
   omega
 
 /-- **`forced_iff`.** `forcedVal n x` reads off `⟨1, b⟩` exactly when the version space is
-nonempty and unanimous on `b` at the query point — [SQ] §4's read-off, made exact. The forward
+nonempty and unanimous on `b` at the query point — the read-off, made exact. The forward
 direction is where `exists_relabel` is spent: the failing other call rules out `1 - b`, and
 relabeling rules out every non-bit prediction. -/
 theorem forced_iff (n x : ℕ) (hn : SolveWF n) (hk : 0 < readK (svInst n))
@@ -974,27 +986,27 @@ theorem empty_iff (n x : ℕ) (hn : SolveWF n) (hk : 0 < readK (svInst n))
   · rintro ⟨h0, h1⟩ hcons
     obtain ⟨rules, d, hval, hconsD⟩ := hcons
     by_cases hv0 : evalDLn rules d (mkEx 0 x) = 0
-    · exact ((dV_iff n x 0 hn hk (by omega) hone hqx hqbits exs hdeq hdlen).mpr
+    · exact ((decide_extPacked_iff n x 0 hn hk (by omega) hone hqx hqbits exs hdeq hdlen).mpr
         ⟨rules, d, hval, hv0, hconsD⟩) h0
     · by_cases hv1 : evalDLn rules d (mkEx 0 x) = 1
       · have hev1 : evalDLn rules d (mkEx 1 x) = 1 := by
           rw [evalDLn_mkEx_congr rules d 1 0 x]; exact hv1
-        exact ((dV_iff n x 1 hn hk (by omega) hone hqx hqbits exs hdeq hdlen).mpr
+        exact ((decide_extPacked_iff n x 1 hn hk (by omega) hone hqx hqbits exs hdeq hdlen).mpr
           ⟨rules, d, hval, hev1, hconsD⟩) h1
       · obtain ⟨rules', d', hval', hev', hcons'⟩ :=
           exists_relabel (readK (svInst n)) (mkEx 0 x) exs hlbl rules d hval hconsD
             ⟨hv0, hv1⟩ 0
-        exact ((dV_iff n x 0 hn hk (by omega) hone hqx hqbits exs hdeq hdlen).mpr
+        exact ((decide_extPacked_iff n x 0 hn hk (by omega) hone hqx hqbits exs hdeq hdlen).mpr
           ⟨rules', d', hval', hev', hcons'⟩) h0
   · intro hncons
     refine ⟨?_, ?_⟩
     · by_contra h0
       obtain ⟨rules, d, hval, _, hcons⟩ :=
-        (dV_iff n x 0 hn hk (by omega) hone hqx hqbits exs hdeq hdlen).mp h0
+        (decide_extPacked_iff n x 0 hn hk (by omega) hone hqx hqbits exs hdeq hdlen).mp h0
       exact hncons ⟨rules, d, hval, hcons⟩
     · by_contra h1
       obtain ⟨rules, d, hval, _, hcons⟩ :=
-        (dV_iff n x 1 hn hk (by omega) hone hqx hqbits exs hdeq hdlen).mp h1
+        (decide_extPacked_iff n x 1 hn hk (by omega) hone hqx hqbits exs hdeq hdlen).mp h1
       exact hncons ⟨rules, d, hval, hcons⟩
 
 /-- **`split_iff`.** Both extended decisions succeed exactly when the version space contains two
@@ -1010,8 +1022,8 @@ theorem split_iff (n x : ℕ) (hn : SolveWF n) (hk : 0 < readK (svInst n))
         Consistent rules1 d1 exs ∧ evalDLn rules0 d0 (mkEx 0 x) = 0 ∧
         evalDLn rules1 d1 (mkEx 0 x) = 1 := by
   unfold d0V d1V
-  rw [dV_iff n x 0 hn hk (by omega) hone hqx hqbits exs hdeq hdlen,
-    dV_iff n x 1 hn hk (by omega) hone hqx hqbits exs hdeq hdlen]
+  rw [decide_extPacked_iff n x 0 hn hk (by omega) hone hqx hqbits exs hdeq hdlen,
+    decide_extPacked_iff n x 1 hn hk (by omega) hone hqx hqbits exs hdeq hdlen]
   constructor
   · rintro ⟨⟨rules0, d0, hval0, hev0, hcons0⟩, ⟨rules1, d1, hval1, hev1, hcons1⟩⟩
     refine ⟨rules0, d0, rules1, d1, hval0, hcons0, hval1, hcons1, hev0, ?_⟩
@@ -1142,7 +1154,7 @@ set_option maxHeartbeats 0 in
 private theorem rfindFree_cForced : RfindFree cForced := by repeat constructor
 
 /-- **`cForced`'s native cost.** Two extended solves at `readM (svInst n) + 1` examples with
-`readK (svInst n)` unchanged (`OneDL.tc_cSolve_raw` instantiated at each, via the exact `Bsv`
+`readK (svInst n)` unchanged (`DecisionList.tc_cSolve_raw` instantiated at each, via the exact `Bsv`
 step `Bsv_ext`), plus the Stage A scan overhead (`tc_cDecide_le`), plus `O(1)` wiring and
 read-off. -/
 theorem tc_forced_raw (n x : ℕ) (hn : SolveWF n)
@@ -1211,7 +1223,8 @@ theorem tc_forced_raw (n x : ℕ) (hn : SolveWF n)
     val_cD01 n x
   have hcore : tc cForcedCore (val cD01 (Nat.pair n x)) ≤ 1200 := by
     rw [hcorepre]
-    exact tc_cForcedCore_le _ _ (by unfold d0V at hd0b; exact hd0b) (by unfold d1V at hd1b; exact hd1b)
+    exact tc_cForcedCore_le _ _ (by unfold d0V at hd0b; exact hd0b)
+        (by unfold d1V at hd1b; exact hd1b)
   simp only [cForced, tc_comp]
   omega
 
@@ -1222,7 +1235,7 @@ def ForcedWF (p : ℕ) : Prop :=
 
 /-- **`polyTime_forced`.** The two-consistency-call forced-symbol predictor is poly-time on the
 well-formed domain: `cForced` computes it, its native cost is `PolyBoundedOn` (via `tc_forced_raw`
-and `OneDL.polyTime_solve`'s own poly-bit closure applied twice), and its output is a bit,
+and `DecisionList.polyTime_solve`'s own poly-bit closure applied twice), and its output is a bit,
 hence trivially poly-bit. -/
 theorem polyTime_forced : PolyTimeOn ForcedWF (fun p => forcedVal p.unpair.1 p.unpair.2) := by
   refine ⟨cForced, rfindFree_cForced, fun p _ => ?_, ?_, ?_⟩
@@ -1279,32 +1292,34 @@ theorem polyTime_forced : PolyTimeOn ForcedWF (fun p => forcedVal p.unpair.1 p.u
 Each guard **fails `lake build`** if the theorem's axiom set ever drifts from the standard
 `[propext, Classical.choice, Quot.sound]`. -/
 
-/-- info: 'OneDL.decide_iff' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'DecisionList.decide_iff' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs (whitespace := lax) in
 #print axioms decide_iff
 
-/-- info: 'OneDL.exists_relabel' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+set_option linter.style.longLine false in
+/-- info: 'DecisionList.exists_relabel' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs (whitespace := lax) in
 #print axioms exists_relabel
 
-/-- info: 'OneDL.forced_iff' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'DecisionList.forced_iff' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs (whitespace := lax) in
 #print axioms forced_iff
 
-/-- info: 'OneDL.empty_iff' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'DecisionList.empty_iff' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs (whitespace := lax) in
 #print axioms empty_iff
 
-/-- info: 'OneDL.split_iff' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'DecisionList.split_iff' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs (whitespace := lax) in
 #print axioms split_iff
 
-/-- info: 'OneDL.tc_forced_raw' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'DecisionList.tc_forced_raw' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs (whitespace := lax) in
 #print axioms tc_forced_raw
 
-/-- info: 'OneDL.polyTime_forced' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+set_option linter.style.longLine false in
+/-- info: 'DecisionList.polyTime_forced' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs (whitespace := lax) in
 #print axioms polyTime_forced
 
-end OneDL
+end DecisionList

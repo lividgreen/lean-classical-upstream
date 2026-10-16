@@ -1,20 +1,12 @@
-/-
-Copyright (c) 2026 Mykola Palamarchuk. All rights reserved.
-Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Mykola Palamarchuk
--/
 module
 
-public import CodeLayer.BitStringPrimrec
+public import AIT.PrefixMachinePrimrec
 public import AIT.CodingTheoremWeak
 
--- Formal-check file, not Mathlib-destined: opt out of the house-style header linter.
-set_option linter.style.header false
-
 /-!
-# `QB`'s lower-semicomputability ([Discovery] §1.1, FV-21)
+# `QB`'s lower-semicomputability
 
-Provenance: [Discovery] §1.1 and FV-21, over the universal prefix machine `PrefixMachine.KB`, the
+Over the universal prefix machine `PrefixMachine.KB`, the
 algorithmic probability `PrefixMachine.QB`, and the bit-string computability layer of
 `CodeLayer/BitStringPrimrec.lean`. Extends `AIT/CodingTheoremWeak.lean` and
 `CodeLayer/BitStringPrimrec.lean`.

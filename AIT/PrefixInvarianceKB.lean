@@ -1,23 +1,13 @@
-/-
-Copyright (c) 2026 Mykola Palamarchuk. All rights reserved.
-Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Mykola Palamarchuk
--/
 module
 
+public import AIT.PrefixMachinePrimrec
 public import CodeLayer.SerializationParse
 
--- Formal-check file, not Mathlib-destined: opt out of the house-style header linter.
-set_option linter.style.header false
-
 /-!
-# `KB`'s invariance under computable maps ([Discovery] §1.1, [Inevitability] §6)
+# `KB`'s invariance under computable maps
 
-Provenance: [Discovery] §1.1's universal-machine invariance, over the prefix complexity `KB` of
-`AIT/PrefixMachine.lean` in place of the additive measure `KE` `CodeLayer/PrefixInvariance.lean`
-already carries. [Inevitability] §6 Remark 6.19 consumes this statement as one of two leaf
-hypotheses of `DeepLadder.prefixChaitinLadder_not_uniform_of` (`ALT/ChaitinPrefixLadder.lean`, in
-the companion library `lean-algorithmic-learning-theory`).
+The universal-machine invariance, over the prefix complexity `KB` of `AIT/PrefixMachine.lean` in
+place of the additive measure `KE` that `CodeLayer/PrefixInvariance.lean` already carries.
 
 ## What this establishes
 * `univPrefix`, `univPrefix_eval`: the universal prefix machine, as a `Code`, extracted from
@@ -54,7 +44,7 @@ open Nat.Partrec Nat.Partrec.Code AdditiveComplexity CodeEvalLaws
 /-! ## The universal prefix machine, as a code -/
 
 /-- The universal prefix machine's simulation step is partial recursive. -/
-theorem partrec_univPrefixFn :
+theorem partrec_univPrefix_fn :
     Nat.Partrec (fun m : ℕ => (parseE (natToBits m) : Part (Code × List Bool)).bind
       fun dq => pfy dq.1 (bitsToNat dq.2)) := by
   have hparseNB : Primrec fun m : ℕ => parseE (natToBits m) :=
@@ -70,12 +60,12 @@ theorem partrec_univPrefixFn :
 /-- **The universal prefix machine, as a code.** Parses a description's serialized machine `d`
 and trailing argument `q` off any input (read as bits), then runs `d` on `q` through `pfy`. -/
 noncomputable def univPrefix : Code :=
-  Classical.choose (exists_code.mp partrec_univPrefixFn)
+  Classical.choose (exists_code.mp partrec_univPrefix_fn)
 
 theorem univPrefix_eval :
     univPrefix.eval = fun m : ℕ =>
       (parseE (natToBits m) : Part (Code × List Bool)).bind fun dq => pfy dq.1 (bitsToNat dq.2) :=
-  Classical.choose_spec (exists_code.mp partrec_univPrefixFn)
+  Classical.choose_spec (exists_code.mp partrec_univPrefix_fn)
 
 /-- **`univPrefix` reproduces `pfy d`** on any serialized-machine-plus-argument description
 `E d ++ q`. -/

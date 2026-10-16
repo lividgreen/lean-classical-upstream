@@ -1,8 +1,3 @@
-/-
-Copyright (c) 2026 Mykola Palamarchuk. All rights reserved.
-Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Mykola Palamarchuk
--/
 module
 
 public import Batteries.Tactic.OpenPrivate
@@ -15,12 +10,8 @@ import Mathlib.Tactic.Push
 public import ErgodicTheory.DrivenColumns
 import all ErgodicTheory.DrivenColumns
 
--- Formal-check file, not Mathlib-destined: opt out of the house-style header linter.
-set_option linter.style.header false
-
 /-!
 # Columns of a local rule on the line
-([RuleSpace] §4 Proposition 4.2)
 
 A local rule `f : Q → Q → Q → Q` acts on every configuration `ℤ → Q` of the line by
 `step f x i = f (x (i - 1)) (x i) (x (i + 1))`. The column at a cell `i` along the orbit of `x` is
@@ -35,10 +26,10 @@ so; the carrier is a type `Q` and all configurations.
   iff its two boundary columns are, by `DrivenColumns.eventuallyPeriodic_of_driven` on the window.
 * `eventuallyPeriodic_column_between` — **the driven interior**: for finite `Q`, any rule and any
   configuration, columns at `a` and `b` eventually periodic force the column at every `i` with
-  `a ≤ i ≤ b` eventually periodic ([RuleSpace] §4 Proposition 4.2(ii));
+  `a ≤ i ≤ b` eventually periodic (Jen 1990, §3);
   `eventuallyPeriodic_column_between_nonvacuous` meets its four hypotheses at once.
 * `rule90`, `iterate_two_pow_step90` — **`2 ^ j` steps of rule `90` in one identity**
-  ([RuleSpace] §4 Proposition 4.2(iv)): over `ZMod 2` the iterate is
+  (Wolfram 1983): over `ZMod 2` the iterate is
   `x (i - 2 ^ j) + x (i + 2 ^ j)`, by repeated doubling-cancellation, with no binomial coefficient.
 * `iterate_step_eq_zero_of_gt` / `iterate_step_eq_zero_of_lt` — a quiescent rule keeps a
   configuration that vanishes past a bound vanishing past that bound moved by the elapsed time.
@@ -46,7 +37,7 @@ so; the carrier is a type `Q` and all configurations.
   `Pi.single 0 1`, the column of rule `90` at cell `1` reads `1` at every stage `2 ^ (j + 1) - 1`
   and `0` at every stage `2 ^ j + r` with `r < 2 ^ j - 1`.
 * `not_eventuallyPeriodic_column_step90_single_one` — **that column is not eventually periodic**:
-  the gaps between its live stages grow without bound.
+  the gaps between its live stages grow without bound (Jen 1990, Proposition 2).
 -/
 
 @[expose] public section
@@ -81,15 +72,15 @@ private def windowStep (f : Q → Q → Q → Q) (m : ℕ) :
     else f (w ⟨(j : ℕ) - 1, by have := j.isLt; omega⟩) (w j)
            (w ⟨(j : ℕ) + 1, by have := j.isLt; omega⟩)
 
-/-- **The window form** ([RuleSpace] §4 Proposition 4.2(ii)): over a finite carrier, the whole
+/-- **The window form**: over a finite carrier, the whole
 width-`(m + 1)` window is eventually periodic iff its two boundary columns are. Forward, two
 projections. Backward, `DrivenColumns.eventuallyPeriodic_of_driven` on the window itself: the pair
 of boundary columns, shifted one step ahead, is the driving input, and the window's own recursion
 matches `windowStep` exactly. -/
 theorem eventuallyPeriodic_window_iff [Finite Q] (f : Q → Q → Q → Q) (x : ℤ → Q) (a : ℤ) (m : ℕ) :
-    GrowingComposite.EventuallyPeriodic (window f x a (m + 1)) ↔
-      GrowingComposite.EventuallyPeriodic (column f x a) ∧
-      GrowingComposite.EventuallyPeriodic (column f x (a + (m : ℤ))) := by
+    DrivenColumns.EventuallyPeriodic (window f x a (m + 1)) ↔
+      DrivenColumns.EventuallyPeriodic (column f x a) ∧
+      DrivenColumns.EventuallyPeriodic (column f x (a + (m : ℤ))) := by
   constructor
   · intro hW
     refine ⟨?_, ?_⟩
@@ -106,7 +97,7 @@ theorem eventuallyPeriodic_window_iff [Finite Q] (f : Q → Q → Q → Q) (x : 
         simp [window, column, Fin.last]
       rwa [heq] at h
   · rintro ⟨ha, hb⟩
-    have hu : GrowingComposite.EventuallyPeriodic
+    have hu : DrivenColumns.EventuallyPeriodic
         (fun t => (column f x a (t + 1), column f x (a + (m : ℤ)) (t + 1))) :=
       DrivenColumns.eventuallyPeriodic_pair (eventuallyPeriodic_shift ha 1)
         (eventuallyPeriodic_shift hb 1)
@@ -130,21 +121,21 @@ theorem eventuallyPeriodic_window_iff [Finite Q] (f : Q → Q → Q → Q) (x : 
         rfl
     exact DrivenColumns.eventuallyPeriodic_of_driven (windowStep f m) hu hstep
 
-/-- **The driven interior, between two settled columns** ([RuleSpace] §4 Proposition 4.2(ii)):
+/-- **The driven interior, between two settled columns**:
 over a finite carrier, for any rule and any configuration, if the columns at `a` and `b` are each
 eventually periodic, so is the column at every `i` with `a ≤ i ≤ b`. `i` sits inside the
 width-`(b - a + 1)` window based at `a`, whose two boundary columns are exactly the hypotheses, and
 `i`'s column is one coordinate projection of that window. -/
 theorem eventuallyPeriodic_column_between [Finite Q] (f : Q → Q → Q → Q) (x : ℤ → Q) {a b i : ℤ}
-    (ha : GrowingComposite.EventuallyPeriodic (column f x a))
-    (hb : GrowingComposite.EventuallyPeriodic (column f x b))
+    (ha : DrivenColumns.EventuallyPeriodic (column f x a))
+    (hb : DrivenColumns.EventuallyPeriodic (column f x b))
     (hai : a ≤ i) (hib : i ≤ b) :
-    GrowingComposite.EventuallyPeriodic (column f x i) := by
+    DrivenColumns.EventuallyPeriodic (column f x i) := by
   set m : ℕ := (b - a).toNat with hm_def
   have hab : a + (m : ℤ) = b := by omega
-  have hb' : GrowingComposite.EventuallyPeriodic (column f x (a + (m : ℤ))) := by
+  have hb' : DrivenColumns.EventuallyPeriodic (column f x (a + (m : ℤ))) := by
     rw [hab]; exact hb
-  have hW : GrowingComposite.EventuallyPeriodic (window f x a (m + 1)) :=
+  have hW : DrivenColumns.EventuallyPeriodic (window f x a (m + 1)) :=
     (eventuallyPeriodic_window_iff f x a m).mpr ⟨ha, hb'⟩
   set k : ℕ := (i - a).toNat with hk_def
   have hklt : k < m + 1 := by omega
@@ -161,13 +152,13 @@ theorem eventuallyPeriodic_column_between [Finite Q] (f : Q → Q → Q → Q) (
 carrier `Bool`, the rule that keeps the middle value, the constant configuration, and the cells
 `a = -1`, `i = 0`, `b = 1`. -/
 theorem eventuallyPeriodic_column_between_nonvacuous :
-    GrowingComposite.EventuallyPeriodic
+    DrivenColumns.EventuallyPeriodic
         (column (fun (_ b _ : Bool) => b) (fun _ : ℤ => true) (-1)) ∧
-      GrowingComposite.EventuallyPeriodic
+      DrivenColumns.EventuallyPeriodic
         (column (fun (_ b _ : Bool) => b) (fun _ : ℤ => true) 1) ∧
       (-1 : ℤ) ≤ 0 ∧ (0 : ℤ) ≤ 1 := by
   have hfix : step (fun (_ b _ : Bool) => b) (fun _ : ℤ => true) = fun _ : ℤ => true := rfl
-  have hcol : ∀ i : ℤ, GrowingComposite.EventuallyPeriodic
+  have hcol : ∀ i : ℤ, DrivenColumns.EventuallyPeriodic
       (column (fun (_ b _ : Bool) => b) (fun _ : ℤ => true) i) := fun i =>
     ⟨1, 0, one_pos, fun u _ => by
       simp only [column, Function.iterate_fixed hfix]⟩
@@ -178,7 +169,7 @@ theorem eventuallyPeriodic_column_between_nonvacuous :
 /-- **Rule `90`** over `ZMod 2`: the new value is the sum of the two outer neighbours. -/
 abbrev rule90 : ZMod 2 → ZMod 2 → ZMod 2 → ZMod 2 := fun a _ c => a + c
 
-/-- **`2 ^ j` steps of rule `90`, in one identity** ([RuleSpace] §4 Proposition 4.2(iv)): pure
+/-- **`2 ^ j` steps of rule `90`, in one identity**: pure
 `ZMod 2` cancellation of the doubled middle term, no binomial coefficient and no Lucas' theorem,
 and no finiteness of support. -/
 theorem iterate_two_pow_step90 :
@@ -270,7 +261,7 @@ private theorem step90_single_step (j r : ℕ) :
         + ((step rule90) ^[r] (Pi.single (0 : ℤ) (1 : ZMod 2) : ℤ → ZMod 2)) (1 + 2 ^ j) := by
   rw [Function.iterate_add_apply, iterate_two_pow_step90]
 
-/-- **Live at `2 ^ (j + 1) - 1`** ([RuleSpace] §4 Proposition 4.2(iv)): from the single seed, the
+/-- **Live at `2 ^ (j + 1) - 1`**: from the single seed, the
 column of rule `90` at cell `1` reads `1` at every stage `2 ^ j' - 1` with `j' ≥ 1`. Route:
 `2 ^ (j + 1) - 1 = 2 ^ j + (2 ^ j - 1)`, and the doubling identity at `r = 2 ^ j - 1` gives the
 live edge cell plus a cell beyond the `r`-step support. -/
@@ -293,7 +284,7 @@ theorem column_step90_single_one_live (j : ℕ) :
   rw [hstep, hEdge, hZero]
   decide
 
-/-- **Dead strictly between two live stages** ([RuleSpace] §4 Proposition 4.2(iv)): at `2 ^ j + r`
+/-- **Dead strictly between two live stages**: at `2 ^ j + r`
 with `r < 2 ^ j - 1`, the column of rule `90` at cell `1` from the single seed reads `0`. Both
 summands of the doubling identity land beyond the `r`-step support, above (`1 + 2 ^ j`) and below
 (`1 - 2 ^ j`, exactly where `r < 2 ^ j - 1` bites). -/
@@ -313,12 +304,11 @@ theorem column_step90_single_one_dead_between (j r : ℕ) (hr : r < 2 ^ j - 1) :
   rw [hstep, hZ1, hZ2]
   decide
 
-/-- **The column of rule `90` at cell `1` is not eventually periodic** ([RuleSpace] §4
-Proposition 4.2(iv)), from the single seed `Pi.single 0 1`. Given a period `P` from `N`, pick `j`
-past `N + P + 1`; stage `2 ^ j - 1` is live and stage `2 ^ j - 1 + P` is dead, contradicting the
-period. -/
+/-- **The column of rule `90` at cell `1` is not eventually periodic**, from the single seed
+`Pi.single 0 1`. Given a period `P` from `N`, pick `j` past `N + P + 1`; stage `2 ^ j - 1` is live
+and stage `2 ^ j - 1 + P` is dead, contradicting the period. -/
 theorem not_eventuallyPeriodic_column_step90_single_one :
-    ¬ GrowingComposite.EventuallyPeriodic
+    ¬ DrivenColumns.EventuallyPeriodic
       (column rule90 (Pi.single (0 : ℤ) (1 : ZMod 2) : ℤ → ZMod 2) 1) := by
   rintro ⟨P, N, hP, hper⟩
   set j : ℕ := N + P + 2 with hj_def

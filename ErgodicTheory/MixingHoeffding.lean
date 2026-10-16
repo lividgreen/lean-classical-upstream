@@ -1,30 +1,22 @@
-/-
-Copyright (c) 2026 Mykola Palamarchuk. All rights reserved.
-Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Mykola Palamarchuk
--/
 module
 
-public import Learning.SQOracle
+public import Mathlib.Probability.Moments.SubGaussian
 
-set_option linter.style.header false
-set_option linter.style.longLine false
 
 /-!
 # The mixing-Hoeffding predicates
 
-The FJS-shaped single-orbit Hoeffding hypothesis `MixingHoeffding` ([SQ] §3.2, Tool (i)), its
-finite-horizon twin `MixingHoeffdingTo`, and the two lemmas relating them.
-Both predicates are stated over the single-orbit empirical mean `SQOracle.empiricalMean`; nothing
+The single-orbit Hoeffding hypothesis `MixingHoeffding` (in the shape of Fan, Jiang and Sun 2021),
+its finite-horizon twin `MixingHoeffdingTo`, and the two lemmas relating them.
+Both predicates are stated over the single-orbit empirical mean, the sum
+`(n : ℝ)⁻¹ * ∑ i ∈ Finset.range n, Z i ω` written out; nothing
 here uses an ergodic theorem, and the predicates are named hypotheses, not proved concentration
 statements.
 -/
 
 @[expose] public section
 
-open MeasureTheory SQOracle
-
-namespace BirkhoffTool
+open MeasureTheory
 
 variable {X : Type*} [MeasurableSpace X]
 
@@ -38,13 +30,17 @@ the mixing constant `c = (1 + λ)/(1 − λ) ≥ 1`.  (For a query bounded in `[
 factor `1`.)
 
 This is the single-orbit analogue of `SQOracle.sq_oracle_concentration`; at `c = 1` (`λ = 0`,
-the i.i.d. case) the two coincide.  It is stated as a *hypothesis*: `ErgodicTheory.MarkovHoeffding.
-mixingHoeffding_of_gap` derives it, for a finite-state chain, from an operator-norm spectral gap
-and a chain trajectory law, at an explicit (non-sharp) constant `cGap lam`; `ErgodicTheory.MarkovHoeffding.
-exists_mixingHoeffding_of_gap` supplies that chain trajectory law too, unconditionally. -/
+the i.i.d. case) the two coincide.  It is stated as a *hypothesis*:
+`MarkovHoeffding.mixingHoeffding_of_gap` derives it, for a finite-state chain, from an
+operator-norm spectral gap and a chain trajectory law, at an explicit (non-sharp) constant
+`cGap lam`; `MarkovHoeffding.exists_mixingHoeffding_of_gap` supplies that chain trajectory law
+too, unconditionally. -/
 def MixingHoeffding (μ : Measure (ℕ → X)) (Z : ℕ → (ℕ → X) → ℝ) (predZ c : ℝ) : Prop :=
   ∀ (n : ℕ) (τ : ℝ), 1 ≤ n → 0 ≤ τ →
-    μ.real {ω | τ ≤ |empiricalMean Z n ω - predZ|} ≤ 2 * Real.exp (-(n : ℝ) * τ ^ 2 / (2 * c))
+    μ.real {ω | τ ≤ |(n : ℝ)⁻¹ * ∑ i ∈ Finset.range n, Z i ω - predZ|} ≤
+      2 * Real.exp (-(n : ℝ) * τ ^ 2 / (2 * c))
+
+namespace MixingHoeffding
 
 /-- **`MixingHoeffding` bounded to a finite horizon `N`.**  `MixingHoeffding` with its `∀ n`
 quantifier restricted to `n ≤ N`, and nothing else moved: the reference answer stays the declared
@@ -56,7 +52,8 @@ the constant keeps the FJS shape and the `[−1, 1]` normalization, so every con
 every horizon. -/
 def MixingHoeffdingTo (N : ℕ) (μ : Measure (ℕ → X)) (Z : ℕ → (ℕ → X) → ℝ) (predZ c : ℝ) : Prop :=
   ∀ (n : ℕ) (τ : ℝ), 1 ≤ n → n ≤ N → 0 ≤ τ →
-    μ.real {ω | τ ≤ |empiricalMean Z n ω - predZ|} ≤ 2 * Real.exp (-(n : ℝ) * τ ^ 2 / (2 * c))
+    μ.real {ω | τ ≤ |(n : ℝ)⁻¹ * ∑ i ∈ Finset.range n, Z i ω - predZ|} ≤
+      2 * Real.exp (-(n : ℝ) * τ ^ 2 / (2 * c))
 
 /-- The unbounded hypothesis implies the bounded one at every horizon: dropping `n ≤ N` only widens
 the universal it must satisfy. -/
@@ -74,4 +71,4 @@ theorem mixingHoeffding_iff_forall_mixingHoeffdingTo (μ : Measure (ℕ → X))
   ⟨fun h N => mixingHoeffdingTo_of_mixingHoeffding N μ Z predZ c h,
     fun h n τ hn hτ => h n n τ hn le_rfl hτ⟩
 
-end BirkhoffTool
+end MixingHoeffding

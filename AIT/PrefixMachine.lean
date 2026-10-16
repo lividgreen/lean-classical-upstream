@@ -1,8 +1,3 @@
-/-
-Copyright (c) 2026 Mykola Palamarchuk. All rights reserved.
-Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Mykola Palamarchuk
--/
 module
 
 public import Mathlib.Data.Nat.Size
@@ -11,15 +6,12 @@ public import Mathlib.InformationTheory.Coding.PrefixFree
 public import CodeLayer.AdditiveComplexity
 public import CodeLayer.BinaryKraft
 public import CodeLayer.Code.EvalLaws
-
--- Formal-check file, not Mathlib-destined: opt out of the house-style header linter.
-set_option linter.style.header false
+public import CodeLayer.BitStringPrimrec
 
 /-!
 # A universal prefix machine: `KB`, the prefix complexity `KE` is about
 
-Provenance: [Discovery] §1.1 ("a finite program — a binary string for `U_ref`") and FV-13. Extends
-`CodeLayer/AdditiveComplexity.lean` (`E`, `elen`, `KE`) and `CodeLayer/BinaryKraft.lean`.
+Extends `CodeLayer/AdditiveComplexity.lean` (`E`, `elen`, `KE`) and `CodeLayer/BinaryKraft.lean`.
 
 ## What this establishes
 
@@ -27,10 +19,11 @@ A description is a machine `c : Code`, serialized by `E`, followed by a binary a
 machine is made prefix-free the standard way (prefix-free-ification by stages) rather than assumed
 so.
 
-* `bitsToNat`, `natToBits`: a bit-string/natural bijection, `[] ↦ 0`.
+* `bitsToNat`, `natToBits`: a bit-string/natural bijection, `[] ↦ 0`, defined in
+  `CodeLayer/BitStringPrimrec.lean`; here its two inverse laws and its length law.
 * `PrefixFree`: no member of a set of bit-strings is a proper prefix of another — Mathlib's
   `InformationTheory.IsPrefixFree` at the binary alphabet (`prefixFree_iff_isPrefixFree`).
-* `uniquelyDecodable_of_prefixFree`, `kraft_of_prefixFree`: a prefix-free set of bit-strings is
+* `isUniquelyDecodable_of_prefixFree`, `kraft_of_prefixFree`: a prefix-free set of bit-strings is
   uniquely decodable and satisfies Kraft's inequality — Mathlib's two theorems, specialized to
   bit-strings.
 * `pfy`: the prefix-free-ification of a code by stages; `pfy_prefixFree`, `pfy_sub`,
@@ -46,10 +39,10 @@ so.
 `pfy_partrec` (`Partrec₂ pfy`, uniformity in `c`) — the boundary this module once flagged — is
 established in `CodeLayer/BitStringPrimrec.lean`, over the bit-string computability layer it adds.
 
-## Hypotheses: paper-stated vs added
+## Hypotheses: standard vs added
 
-* Paper-stated / faithful: a universal prefix machine over binary programs, `[Discovery] §1.1`'s
-  "a finite program (a binary string for `U_ref`)".
+* Standard: a universal prefix machine over binary programs (a finite program is a binary string
+  for a reference machine).
 * Added / modeling: the concrete prefix-free-ification by stages (a fixed effective enumeration);
   the machine-plus-binary-argument description shape (`E c ++ p`).
 -/
@@ -64,26 +57,10 @@ open scoped ENNReal
 
 /-! ## A bit-string / natural bijection -/
 
-/-- Bit-strings as naturals, most-significant-bit first: the number whose binary digits are
-`1 :: p`, less one. `[] ↦ 0`. -/
-def bitsToNat (p : List Bool) : ℕ :=
-  p.foldl (fun acc b => 2 * acc + b.toNat) 1 - 1
-
-/-- The inverse of `bitsToNat`: the bits of `n + 1`, most-significant-bit first, with the leading
-`1` dropped. Well-founded recursion, peeling the low bit at each step. -/
-def natToBits (n : ℕ) : List Bool :=
-  if h : n + 1 < 2 then []
-  else natToBits ((n + 1) / 2 - 1) ++ [decide ((n + 1) % 2 = 1)]
-termination_by n
-decreasing_by omega
-
-theorem natToBits_zero : natToBits 0 = [] := by
-  rw [natToBits]; simp
-
 private theorem bitsToNat_nil : bitsToNat [] = 0 := rfl
 
 /-- The fold underlying `bitsToNat` only ever grows the accumulator. -/
-private theorem le_bitsFold (p : List Bool) (acc : ℕ) :
+private theorem le_bits_fold (p : List Bool) (acc : ℕ) :
     acc ≤ p.foldl (fun acc b => 2 * acc + b.toNat) acc := by
   induction p generalizing acc with
   | nil => simp
@@ -92,7 +69,7 @@ private theorem le_bitsFold (p : List Bool) (acc : ℕ) :
 private theorem bitsToNat_append_bit (p : List Bool) (b : Bool) :
     bitsToNat (p ++ [b]) = 2 * (bitsToNat p + 1) + b.toNat - 1 := by
   simp only [bitsToNat, List.foldl_append, List.foldl_cons, List.foldl_nil]
-  have hpos := le_bitsFold p 1
+  have hpos := le_bits_fold p 1
   omega
 
 /-- `x ↦ x % 2` of a doubled-plus-bit quantity recovers the bit. -/
@@ -180,7 +157,7 @@ theorem prefixFree_iff_isPrefixFree {S : Set (List Bool)} :
     PrefixFree S ↔ InformationTheory.IsPrefixFree S := Iff.rfl
 
 /-- **A prefix-free set not containing the empty word is uniquely decodable.** -/
-theorem uniquelyDecodable_of_prefixFree {S : Set (List Bool)} (h : PrefixFree S)
+theorem isUniquelyDecodable_of_prefixFree {S : Set (List Bool)} (h : PrefixFree S)
     (hnil : [] ∉ S) : InformationTheory.IsUniquelyDecodable S :=
   (prefixFree_iff_isPrefixFree.mp h).isUniquelyDecodable hnil
 
@@ -570,17 +547,42 @@ noncomputable def minDescCode (x : ℕ) : Code := (exists_min_KB x).choose
 /-- Its binary argument. -/
 noncomputable def minDescArg (x : ℕ) : List Bool := (exists_min_KB x).choose_spec.choose
 
-theorem minDesc_spec (x : ℕ) :
+theorem min_desc_spec (x : ℕ) :
     x ∈ pfy (minDescCode x) (bitsToNat (minDescArg x)) ∧
       elen (minDescCode x) + (minDescArg x).length = KB x :=
   (exists_min_KB x).choose_spec.choose_spec
 
+/-- **The counting bound on `KB`**: at most finitely many naturals are describable within a fixed
+budget — `KB`'s twin of `AdditiveComplexity.finite_KE_le`, over `E c ++ q` (injective by
+`E_append_inj`) in place of `E c` alone, since a `KB`-description carries an argument too. -/
+theorem setOf_KB_le_finite (L : ℕ) : {x : ℕ | KB x ≤ L}.Finite := by
+  have hinj : Function.Injective fun x : ℕ => (minDescCode x, minDescArg x) := by
+    intro x y hxy
+    have hx := (min_desc_spec x).1
+    have hy := (min_desc_spec y).1
+    rw [Prod.mk.injEq] at hxy
+    rw [hxy.1, hxy.2] at hx
+    exact Part.mem_unique hx hy
+  have hinj' : Function.Injective fun x : ℕ => E (minDescCode x) ++ minDescArg x := by
+    intro x y hxy
+    have := (E_append_inj (minDescCode x) (minDescCode y) (minDescArg x) (minDescArg y) hxy).1
+    exact hinj (Prod.ext this
+      ((E_append_inj (minDescCode x) (minDescCode y) (minDescArg x) (minDescArg y) hxy).2))
+  have hsub : {x : ℕ | KB x ≤ L} ⊆
+      (fun x => E (minDescCode x) ++ minDescArg x) ⁻¹' ↑(bitLists L) := fun x hx =>
+    mem_bitLists (by
+      have h2 : (E (minDescCode x)).length + (minDescArg x).length = KB x := (min_desc_spec x).2
+      simp only [List.length_append]
+      rw [h2]
+      exact hx)
+  exact Set.Finite.subset (Set.Finite.preimage hinj'.injOn (bitLists L).finite_toSet) hsub
+
 /-- **Distinct values have distinct shortest descriptions.** -/
-private theorem minDesc_injective :
+private theorem min_desc_injective :
     Function.Injective fun x => (⟨minDescCode x, minDescArg x⟩ : Code × List Bool) := by
   intro x y hxy
-  have hx := (minDesc_spec x).1
-  have hy := (minDesc_spec y).1
+  have hx := (min_desc_spec x).1
+  have hy := (min_desc_spec y).1
   rw [Prod.mk.injEq] at hxy
   rw [hxy.1, hxy.2] at hx
   exact Part.mem_unique hx hy
@@ -637,7 +639,7 @@ theorem tsum_row_le (c : Code) : ∑' p, kbWeight (c, p) ≤ (1 / 2 : ℝ) ^ ele
     _ = (1 / 2 : ℝ) ^ elen c := mul_one _
 
 theorem summable_elen : Summable fun c : Code => (1 / 2 : ℝ) ^ elen c := by
-  simpa [elen] using BinaryKraft.indexed_summable E E_injective uniquelyDecodable_range_E
+  simpa [elen] using BinaryKraft.indexed_summable E E_injective isUniquelyDecodable_range_E
 
 theorem summable_tsum_row : Summable fun c : Code => ∑' p, kbWeight (c, p) :=
   summable_elen.of_nonneg_of_le (fun c => tsum_nonneg fun p => kbWeight_nonneg (c, p)) tsum_row_le
@@ -647,7 +649,7 @@ theorem summable_kbWeight : Summable kbWeight := by
   exact ⟨summable_row, summable_tsum_row⟩
 
 /-- **`KB`'s Kraft series is summable.** Each `x` contributes the weight of its own shortest
-description (`minDesc_spec`), and the descriptions are pairwise distinct (`minDesc_injective`), so
+description (`min_desc_spec`), and the descriptions are pairwise distinct (`min_desc_injective`), so
 the series is dominated, along that injection, by `summable_kbWeight`. Hoisted out of `kraft_KB` so
 the counting bound (`AIT/PrefixCounting.lean`) can cite it without re-deriving `kraft_KB`
 itself. -/
@@ -655,10 +657,10 @@ theorem summable_two_pow_neg_KB : Summable fun x : ℕ => (1 / 2 : ℝ) ^ KB x :
   set Φ : ℕ → Code × List Bool := fun x => (minDescCode x, minDescArg x) with hΦ
   have hΦinj : Function.Injective Φ := by
     intro x y hxy
-    exact minDesc_injective hxy
+    exact min_desc_injective hxy
   have hval : ∀ x : ℕ, (1 / 2 : ℝ) ^ KB x ≤ kbWeight (Φ x) := by
     intro x
-    have hspec := minDesc_spec x
+    have hspec := min_desc_spec x
     have hmemS : minDescArg x ∈ natToBits '' (pfy (minDescCode x)).Dom :=
       ⟨bitsToNat (minDescArg x), Part.dom_iff_mem.mpr ⟨x, hspec.1⟩, natToBits_bitsToNat _⟩
     have : kbWeight (Φ x) = (1 / 2 : ℝ) ^ (elen (minDescCode x) + (minDescArg x).length) := by
@@ -669,16 +671,16 @@ theorem summable_two_pow_neg_KB : Summable fun x : ℕ => (1 / 2 : ℝ) ^ KB x :
 
 /-- **Kraft's inequality for `KB`**: `∑ₓ 2⁻ᴷᴮ⁽ˣ⁾ ≤ 1` — `KB` is a semimeasure. Each `x` contributes
 the weight of its own shortest description; the descriptions are pairwise distinct
-(`minDesc_injective`), and for a fixed machine `c` the arguments range over `pfy c`'s domain,
+(`min_desc_injective`), and for a fixed machine `c` the arguments range over `pfy c`'s domain,
 prefix-free by `pfy_prefixFree`, hence Kraft-summable by `kraft_of_prefixFree`. -/
 theorem kraft_KB : ∑' x : ℕ, (1 / 2 : ℝ) ^ KB x ≤ 1 := by
   set Φ : ℕ → Code × List Bool := fun x => (minDescCode x, minDescArg x) with hΦ
   have hΦinj : Function.Injective Φ := by
     intro x y hxy
-    exact minDesc_injective hxy
+    exact min_desc_injective hxy
   have hval : ∀ x : ℕ, (1 / 2 : ℝ) ^ KB x ≤ kbWeight (Φ x) := by
     intro x
-    have hspec := minDesc_spec x
+    have hspec := min_desc_spec x
     have hmemS : minDescArg x ∈ natToBits '' (pfy (minDescCode x)).Dom :=
       ⟨bitsToNat (minDescArg x), Part.dom_iff_mem.mpr ⟨x, hspec.1⟩, natToBits_bitsToNat _⟩
     have : kbWeight (Φ x) = (1 / 2 : ℝ) ^ (elen (minDescCode x) + (minDescArg x).length) := by

@@ -1,8 +1,3 @@
-/-
-Copyright (c) 2026 Mykola Palamarchuk. All rights reserved.
-Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Mykola Palamarchuk
--/
 module
 
 public import Mathlib.MeasureTheory.Order.Group.Lattice
@@ -10,49 +5,41 @@ public import Mathlib.Probability.Moments.SubGaussian
 public import Learning.SQObjects
 public import Learning.SQBounds
 
--- Formal-check file, not Mathlib-destined: opt out of the house-style header linter.
-set_option linter.style.header false
--- `hδ1 : δ ≤ 1` is kept in the signatures for faithfulness to [SQ] §3, though the proof only
--- needs it via the trivial `1 - δ ≤ 0` branch; long doc-comment lines are intentional.
-set_option linter.style.longLine false
-set_option linter.unusedVariables false
-
 /-!
-# The i.i.d.-ensemble SQ oracle: Hoeffding concentration + sample complexity ([SQ] §3)
+# The i.i.d.-ensemble SQ oracle: Hoeffding concentration + sample complexity
 
-Provenance: [SQ], §3 "Tool (ii)" (the statistical-query oracle realised on the i.i.d. ensemble of
-trajectories) and the `O(1/√n)` query estimate that §4(b) / Appendix A consume. This file supplies
-the *probabilistic core* that `ALT/SQVersionSpace.lean` (FV-A4, in the companion library
-`lean-algorithmic-learning-theory`) takes as the bare hypothesis `hemp : |emp − predR| ≤ τ`: it
-DERIVES, by Hoeffding, that the empirical SQ answer concentrates around the true answer, and threads
-that through to the "truth survives pruning" guarantee.
+The statistical-query oracle realised on an i.i.d. ensemble of trajectories, with the `O(1/√n)`
+query estimate. This file supplies the *probabilistic core* that `SQBounds.truth_survives_pruning`
+takes as the bare hypothesis `hemp : |emp − predR| ≤ τ`: it DERIVES, by Hoeffding, that the
+empirical SQ answer concentrates around the true answer, and threads that through to the "truth
+survives pruning" guarantee.
 
-This is the quantitative complement to `ALT/SQVersionSpace.lean`: there the `2τ` geometry is
+This is the quantitative complement to `SQBounds.truth_survives_pruning`: there the `2τ` geometry is
 proved assuming the empirical answer is within `τ` of the truth's mean; here that very assumption is
 *discharged* with an explicit sample complexity `n ≥ (2/τ²)·log(2/δ)`.
 
-Status: PROVED as a probability statement over an i.i.d. ensemble.  The single load-bearing import is
-Mathlib's Hoeffding inequality for sub-Gaussian MGFs
+Status: PROVED as a probability statement over an i.i.d. ensemble.  The single load-bearing import
+is Mathlib's Hoeffding inequality for sub-Gaussian MGFs
 (`ProbabilityTheory.HasSubgaussianMGF.measure_sum_range_ge_le_of_iIndepFun` together with
 `hasSubgaussianMGF_of_mem_Icc`).
 
 ## What this DOES establish
-* `sq_oracle_concentration` (§3 Tool (ii), Hoeffding): the empirical mean `empiricalMean` of `n`
+* `sq_oracle_concentration` (Hoeffding): the empirical mean `empiricalMean` of `n`
   i.i.d. bounded query-values `Z i` deviates from the true answer `predZ = 𝔼φ` by `≥ τ` with
   probability `≤ 2·exp(−nτ²/2)`.  Two-sided, via the right tail on the centred family and the left
   tail on its negation.
 * `sq_oracle_sample_complexity` (the `O(1/√n)` estimate, solved for `n`): once
   `n ≥ (2/τ²)·log(2/δ)`, the empirical answer is within `τ` of the truth with probability `≥ 1−δ`.
-* `sq_oracle_truth_survives` (§3 → FV-A4 wiring): chaining the sample complexity through
-  `SQVersionSpace.truth_survives_pruning`, with `n ≥ (2/τ²)·log(2/δ)` the truth's predicted
-  statistic lies within `2τ` of the empirical answer with probability `≥ 1−δ` — so the SQ-pruning
-  rule of `ALT/SQVersionSpace.lean` never discards the truth.
-* `sq_oracle_uniform_tail`, `empirical_isSQOracle` (FV-E → FV-J glue): the finite-query
-  union bound. If each query `φ ∈ Qs` has small tail `μ{τ < |empᵩ − truᵩ|} ≤ δ` (the FV-E
-  conclusion shape), then `μ{∃ φ ∈ Qs, τ < |…|} ≤ |Qs|·δ`, and off that event — w.p. `≥ 1 − |Qs|·δ`
-  — the empirical answers restricted to `Qs` satisfy FV-J's genuine `SQObjects.IsSQOracle` predicate.
-  This is the glue from FV-E's per-query concentration to FV-J's oracle object, at the union-bound
-  level.
+* `sq_oracle_truth_survives` (pruning wiring): chaining the sample complexity through
+  `SQBounds.truth_survives_pruning`, with `n ≥ (2/τ²)·log(2/δ)` the truth's predicted statistic lies
+  within `2τ` of the empirical answer with probability `≥ 1−δ` — so the `2τ` SQ-pruning rule never
+  discards the truth.
+* `sq_oracle_uniform_tail`, `empirical_isSQOracle` (union-bound glue): the finite-query union bound.
+  If each query `φ ∈ Qs` has small tail `μ{τ < |empᵩ − truᵩ|} ≤ δ` (the shape of
+  `sq_oracle_concentration`'s conclusion), then `μ{∃ φ ∈ Qs, τ < |…|} ≤ |Qs|·δ`, and off that event
+  — w.p. `≥ 1 − |Qs|·δ` — the empirical answers restricted to `Qs` satisfy the genuine
+  `SQObjects.IsSQOracle` predicate. This is the glue from per-query concentration to the oracle
+  object, at the union-bound level.
 * `empirical_isSQOracle_of_iid`: the per-query INSTANTIATION — a
   query-indexed i.i.d. family `Zq : Q → ℕ → Ω → ℝ` (each query's values i.i.d. in `[−1,1]` with mean
   `tru φ`, per `sq_oracle_concentration`) DISCHARGES `sq_oracle_uniform_tail`'s `htail` with
@@ -65,13 +52,12 @@ Mathlib's Hoeffding inequality for sub-Gaussian MGFs
   per-trajectory query `φ` is taken already composed into `Z i = φ ∘ Xᵢ`.  Independence is the
   hypothesis `hindep`, identical means the hypothesis `hmean`.
 * Not the SQ statistical dimension `d_SQ`, the concept class `M`, or the version-space envelope:
-  those are the subject of `ALT/SQVersionSpace.lean` (FV-A4, in the companion library
-  `lean-algorithmic-learning-theory`) and `Learning/SQObjects.lean` (FV-J).
-* Not the negligible-pruned-mass / competitor-decay half of Appendix A's soundness: that is the
-  [Discovery] Bayes-mixture argument and stays in prose.
+  those are the subject of `Learning/SQObjects.lean` and `Learning/SQEnvelope.lean`.
+* Not the negligible-pruned-mass / competitor-decay half of the soundness of SQ pruning: that
+  stays in prose.
 
-## Hypotheses: paper-stated vs added/strengthened
-* Paper-stated / faithful: i.i.d. ensemble (`hindep` + common mean `hmean`); bounded query-values
+## Hypotheses: standard vs added/strengthened
+* Standard: i.i.d. ensemble (`hindep` + common mean `hmean`); bounded query-values
   (`hbdd`, the `φ : · → [−1,1]` normalisation of the SQ model); the empirical-mean estimator
   `empiricalMean`; the `O(1/√n)` rate solved as `n ≥ (2/τ²)·log(2/δ)`.
 * Added/strengthened (flagged): the query-values are taken in the *concrete* interval `[−1,1]`
@@ -108,7 +94,8 @@ private theorem tail_le
   have hnpos : (0 : ℝ) < n := by exact_mod_cast hn
   have hn0 : (n : ℝ) ≠ 0 := ne_of_gt hnpos
   have hnτ : (0 : ℝ) ≤ (n : ℝ) * τ := mul_nonneg hnpos.le hτ
-  -- The centred family `Z i − predZ` is sub-Gaussian with proxy `1` (Hoeffding's lemma on `[−1,1]`).
+  -- The centred family `Z i − predZ` is sub-Gaussian with proxy `1` (Hoeffding's lemma on
+  -- `[−1,1]`).
   have hsgW : ∀ i, HasSubgaussianMGF (fun ω => Z i ω - predZ) 1 μ := by
     intro i
     have h := hasSubgaussianMGF_of_mem_Icc (μ := μ) (X := Z i)
@@ -141,7 +128,7 @@ private theorem tail_le
   push_cast
   field_simp
 
-/-- **§3 Tool (ii), Hoeffding concentration of the SQ oracle.**  The empirical mean of `n` i.i.d.
+/-- **Hoeffding concentration of the SQ oracle.**  The empirical mean of `n` i.i.d.
 bounded query-values is within `τ` of the true answer `predZ = 𝔼φ` except with probability
 `≤ 2·exp(−nτ²/2)`. -/
 theorem sq_oracle_concentration
@@ -201,7 +188,7 @@ theorem sq_oracle_sample_complexity
     (Z : ℕ → Ω → ℝ) (predZ : ℝ) (n : ℕ) (τ δ : ℝ)
     (hmeas : ∀ i, Measurable (Z i)) (hbdd : ∀ i, ∀ ω, Z i ω ∈ Set.Icc (-1 : ℝ) 1)
     (hindep : iIndepFun Z μ) (hmean : ∀ i, μ[Z i] = predZ)
-    (hn1 : 1 ≤ n) (hτ : 0 < τ) (hδ0 : 0 < δ) (hδ1 : δ ≤ 1)
+    (hn1 : 1 ≤ n) (hτ : 0 < τ) (hδ0 : 0 < δ) (_hδ1 : δ ≤ 1)
     (hn : (2 / τ ^ 2) * Real.log (2 / δ) ≤ (n : ℝ)) :
     1 - δ ≤ μ.real {ω | |empiricalMean Z n ω - predZ| < τ} := by
   have hconc := sq_oracle_concentration Z predZ n τ hmeas hbdd hindep hmean hn1 hτ.le
@@ -244,11 +231,10 @@ theorem sq_oracle_sample_complexity
   rw [hcompl]
   linarith [hconc, hexple]
 
-/-- **§3 → FV-A4 wiring: the SQ oracle discharges `SQVersionSpace.truth_survives_pruning`'s
+/-- **Pruning wiring: the SQ oracle discharges `SQBounds.truth_survives_pruning`'s
 hypothesis.** With `n ≥ (2/τ²)·log(2/δ)` ensemble trajectories, with probability `≥ 1−δ` the truth's
 predicted statistic `predZ` is within `2τ` of the empirical answer — i.e. it is never pruned by the
-`2τ`-rule of `ALT/SQVersionSpace.lean` (in the companion library
-`lean-algorithmic-learning-theory`). -/
+`2τ`-rule. -/
 theorem sq_oracle_truth_survives
     (Z : ℕ → Ω → ℝ) (predZ : ℝ) (n : ℕ) (τ δ : ℝ)
     (hmeas : ∀ i, Measurable (Z i)) (hbdd : ∀ i, ∀ ω, Z i ω ∈ Set.Icc (-1 : ℝ) 1)
@@ -260,25 +246,26 @@ theorem sq_oracle_truth_survives
   refine hsc.trans (measureReal_mono ?_ (measure_ne_top μ _))
   intro ω hω
   simp only [Set.mem_ofPred_eq] at hω ⊢
-  exact SQVersionSpace.truth_survives_pruning predZ (empiricalMean Z n ω) τ hτ.le hω.le
+  exact SQBounds.truth_survives_pruning predZ (empiricalMean Z n ω) τ hτ.le hω.le
 
-/-! ### The W-attack: window-noise budget `2η ≤ τ` ([SQ] §3.1)
+/-! ### The W-attack: window-noise budget `2η ≤ τ`
 
-The window-sufficiency assumption (W) of [SQ] §3.1 — "the window determines the next observation
+The window-sufficiency assumption (W) — "the window determines the next observation
 under R" — is the *determinism* of the one-step predictor `f_R`; it weakens gracefully to the
 window-noise rate `η := μ(o_{t+1} ≠ f_R(w_t))` (the Bayes error of the window predictor under the
 invariant measure; W is `η = 0`).  `noise_gap_integral` is the genuine content — a `[−1,1]`-valued
-query answer is distorted by at most `2η` — and `sq_oracle_truth_survives_noisy` threads it, with the
-arithmetic siblings in `SQVersionSpace`, into the FV-A4 guarantee: the deterministic truth survives
+query answer is distorted by at most `2η` — and `sq_oracle_truth_survives_noisy` threads it, with
+the arithmetic siblings in `SQBounds`, into the pruning guarantee: the deterministic truth survives
 the *unchanged* `2τ`-pruning rule with probability `≥ 1−δ` exactly when the window-noise budget
 `2η ≤ τ` holds. -/
 
-/-- **A1 — the window-noise integral gap** ([SQ] §3.1).  Two `[−1,1]`-valued measurable observables
-`f`, `g` that agree off a measurable event `E` have integrals differing by at most `2·μ(E)`.  Applied
-to a `[−1,1]`-valued SQ query answer, the realized-next-observation value `φ(w, o_next)` and the
-deterministic-prediction value `φ(w, f_R(w))` agree off the window-noise event `E = {o_next ≠ f_R(w)}`
-of mass `η := μ(E)`, so the query answer is distorted by at most `2η`.  Boundedness on the
-probability measure discharges integrability; the majorant is the indicator `2·𝟙_E`. -/
+/-- **A1 — the window-noise integral gap**.  Two `[−1,1]`-valued measurable observables
+`f`, `g` that agree off a measurable event `E` have integrals differing by at most `2·μ(E)`.
+Applied to a `[−1,1]`-valued SQ query answer, the realized-next-observation value `φ(w, o_next)` and
+the deterministic-prediction value `φ(w, f_R(w))` agree off the window-noise event
+`E = {o_next ≠ f_R(w)}` of mass `η := μ(E)`, so the query answer is distorted by at most `2η`.
+Boundedness on the probability measure discharges integrability; the majorant is the indicator
+`2·𝟙_E`. -/
 theorem noise_gap_integral
     (f g : Ω → ℝ) (E : Set Ω)
     (hf : ∀ ω, f ω ∈ Set.Icc (-1 : ℝ) 1) (hg : ∀ ω, g ω ∈ Set.Icc (-1 : ℝ) 1)
@@ -309,14 +296,14 @@ theorem noise_gap_integral
     _ = μ.real E • (2 : ℝ) := integral_indicator_const (2 : ℝ) hE
     _ = 2 * μ.real E := by rw [smul_eq_mul]; ring
 
-/-- **A3 — §3 → FV-A4 wiring under window noise: the SQ oracle survives a `2η ≤ τ` budget.**
+/-- **A3 — pruning wiring under window noise: the SQ oracle survives a `2η ≤ τ` budget.**
 Mirror of `sq_oracle_truth_survives` that keeps the empirical mean's target `a = 𝔼φ` (the joint
 window/next-observation answer, on which the time-average concentrates) distinct from the
 deterministic-prediction truth `predR`: the two differ by the window-noise gap `|a − predR| ≤ 2η`
-(bounded by `noise_gap_integral` at the call site).  With `n ≥ (2/τ²)·log(2/δ)` ensemble trajectories
-and window-noise budget `2η ≤ τ`, the truth's predicted statistic `predR` lies within `2τ` of the
-empirical answer with probability `≥ 1−δ` — so the `2τ`-pruning rule never discards it.  At `η = 0`
-(so `a = predR`) this is exactly `sq_oracle_truth_survives`. -/
+(bounded by `noise_gap_integral` at the call site).  With `n ≥ (2/τ²)·log(2/δ)` ensemble
+trajectories and window-noise budget `2η ≤ τ`, the truth's predicted statistic `predR` lies within
+`2τ` of the empirical answer with probability `≥ 1−δ` — so the `2τ`-pruning rule never discards it.
+At `η = 0` (so `a = predR`) this is exactly `sq_oracle_truth_survives`. -/
 theorem sq_oracle_truth_survives_noisy
     (Z : ℕ → Ω → ℝ) (predR a : ℝ) (n : ℕ) (τ δ η : ℝ)
     (hmeas : ∀ i, Measurable (Z i)) (hbdd : ∀ i, ∀ ω, Z i ω ∈ Set.Icc (-1 : ℝ) 1)
@@ -329,16 +316,16 @@ theorem sq_oracle_truth_survives_noisy
   refine hsc.trans (measureReal_mono ?_ (measure_ne_top μ _))
   intro ω hω
   simp only [Set.mem_ofPred_eq] at hω ⊢
-  exact SQVersionSpace.truth_survives_pruning_noisy predR a (empiricalMean Z n ω) τ η hτ.le hη
+  exact SQBounds.truth_survives_pruning_noisy predR a (empiricalMean Z n ω) τ η hτ.le hη
     hbudget hω.le hnoise
 
-/-! ### FV-E → FV-J union-bound glue
+/-! ### Union-bound glue
 
 The finite-query union bound that carries the per-query concentration of `sq_oracle_concentration`
-to FV-J's genuine oracle object `SQObjects.IsSQOracle`: given a `Finset` of queries `Qs`, empirical
-answers `emp : Q → Ω → ℝ`, truth `tru : Q → ℝ`, and a per-query tail bound (the FV-E conclusion
-shape), the empirical answers restricted to `Qs` satisfy the oracle predicate off an event of measure
-`≤ |Qs|·δ`. -/
+to the genuine oracle object `SQObjects.IsSQOracle`: given a `Finset` of queries `Qs`, empirical
+answers `emp : Q → Ω → ℝ`, truth `tru : Q → ℝ`, and a per-query tail bound (the shape of
+`sq_oracle_concentration`'s conclusion), the empirical answers restricted to `Qs` satisfy the oracle
+predicate off an event of measure `≤ |Qs|·δ`. -/
 
 variable {Q : Type*}
 
@@ -359,8 +346,8 @@ theorem sq_oracle_uniform_tail (Qs : Finset Q) (emp : Q → Ω → ℝ) (tru : Q
     _ = Qs.card * ENNReal.ofReal δ := by rw [Finset.sum_const, nsmul_eq_mul]
 
 omit [IsProbabilityMeasure μ] in
-/-- **FV-E → FV-J oracle-object glue.**  Off an event of measure `≤ |Qs|·δ` — i.e. with probability
-`≥ 1 − |Qs|·δ` — the empirical answers restricted to `Qs` satisfy FV-J's genuine oracle predicate
+/-- **Oracle-object glue.**  Off an event of measure `≤ |Qs|·δ` — i.e. with probability
+`≥ 1 − |Qs|·δ` — the empirical answers restricted to `Qs` satisfy the genuine oracle predicate
 `SQObjects.IsSQOracle` (over the subtype `↥Qs`).  The complement of the good event is exactly the
 "some query fails" event of `sq_oracle_uniform_tail`. -/
 theorem empirical_isSQOracle (Qs : Finset Q) (emp : Q → Ω → ℝ) (tru : Q → ℝ) (τ δ : ℝ)
@@ -380,7 +367,7 @@ theorem empirical_isSQOracle (Qs : Finset Q) (emp : Q → Ω → ℝ) (tru : Q �
 `Zq : Q → ℕ → Ω → ℝ` — each query's values i.i.d. in `[−1,1]` with mean `tru φ`, per
 `sq_oracle_concentration`'s hypotheses — DISCHARGES `sq_oracle_uniform_tail`'s per-query tail with
 `δ_φ = 2·exp(−nτ²/2)`, giving the end-to-end bound: with `n ≥ (2/τ²)·log(2·|Qs|/δ)` samples per
-query, the empirical answers fail FV-J's `SQObjects.IsSQOracle` on `↥Qs` with probability `≤ δ`. -/
+query, the empirical answers fail `SQObjects.IsSQOracle` on `↥Qs` with probability `≤ δ`. -/
 theorem empirical_isSQOracle_of_iid (Qs : Finset Q) (hQs : Qs.Nonempty)
     (Zq : Q → ℕ → Ω → ℝ) (tru : Q → ℝ) (τ δ : ℝ) (n : ℕ)
     (hmeas : ∀ φ ∈ Qs, ∀ i, Measurable (Zq φ i))
@@ -427,7 +414,7 @@ theorem empirical_isSQOracle_of_iid (Qs : Finset Q) (hQs : Qs.Nonempty)
       _ ≤ (2 * (Qs.card : ℝ)) * (δ / (2 * (Qs.card : ℝ))) :=
           mul_le_mul_of_nonneg_left hstep (by positivity)
       _ = δ := by field_simp
-  -- assemble: union bound to FV-J's oracle object, then the `|Qs|·δ_φ ≤ δ` collapse.
+  -- assemble: union bound to the oracle object, then the `|Qs|·δ_φ ≤ δ` collapse.
   calc μ ({ω | SQObjects.IsSQOracle (fun φ : ↥Qs => empiricalMean (Zq ↑φ) n ω)
           (fun φ : ↥Qs => tru ↑φ) τ}ᶜ)
       ≤ (Qs.card : ENNReal) * ENNReal.ofReal (2 * Real.exp (-(n : ℝ) * τ ^ 2 / 2)) :=

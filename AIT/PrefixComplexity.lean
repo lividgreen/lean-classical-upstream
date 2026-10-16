@@ -1,34 +1,23 @@
-/-
-Copyright (c) 2026 Mykola Palamarchuk. All rights reserved.
-Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Mykola Palamarchuk
--/
 module
 
 public import Mathlib.Topology.Algebra.InfiniteSum.ENNReal
 public import AIT.KolmogorovComplexity
 public import AIT.KolmogorovBitlen
 
--- Formal-check file, not Mathlib-destined: opt out of the house-style linters.
-set_option linter.style.header false
-set_option linter.style.longLine false
 
 /-!
 # Prefix-free Kolmogorov complexity `KP` is a semimeasure
 
-[Discovery] §1.1 prior (FV-13); Solomonoff/Levin.
-
-Provenance: extends `AIT/KolmogorovComplexity.lean` (Slice 1: `Computes`, `codelen`, `K`, `K_le`,
-`exists_min_code`). Formalizes the **universal a-priori semimeasure** bound `∑ₓ 2⁻ᴷᴾ⁽ˣ⁾ ≤ 1`
+Solomonoff/Levin. Extends `AIT/KolmogorovComplexity.lean` (`Computes`, `codelen`, `K`,
+`K_le`, `exists_min_code`). Formalizes the **universal a-priori semimeasure** bound `∑ₓ 2⁻ᴷᴾ⁽ˣ⁾ ≤ 1`
 (Levin's coding theorem / Solomonoff prior), the defining property of a *prefix-free* Kolmogorov
-complexity. Connects to [Discovery] §1.1 (`K(R)`, program length in bits) and [SQ] §2.
+complexity.
 
 ## Why this is genuine content (not reusable from the existing measures)
 The plain bit-length complexity `K_bitlen` (`AIT/KolmogorovBitlen.lean`) carries no Kraft
 inequality: nothing here bounds `∑ₓ 2⁻ᴷᵇⁱᵗˡᵉⁿ⁽ˣ⁾`, and whether it converges is not settled — the
 classical divergence counts `≈ 2ⁿ` strings of complexity `n`, which needs a data embedding at
-constant cost that no code here supplies (the one of `ALT/IndexCost.lean`, in the companion library
-`lean-algorithmic-learning-theory`, costs a factor). The semimeasure bound holds only after paying
+constant cost that no code here supplies. The semimeasure bound holds only after paying
 the *prefix premium*: descriptions must be self-delimiting. We charge that premium with an
 Elias-γ-class length `plen m = 2 · Nat.size (m + 1)` on program indices, so that the description set
 is prefix-free and its Kraft sum is `≤ 1`.
@@ -40,22 +29,21 @@ is prefix-free and its Kraft sum is `≤ 1`.
 * `K_injective`: distinct outputs have distinct least-index programs.
 * `kraft_plen : ∑' m, 2⁻¹ ^ plen m ≤ 1`: the Kraft inequality for the `plen` code (the crux).
 * `kraft_KP : ∑' x, 2⁻¹ ^ KP x ≤ 1`: **the headline** — `KP` is a semimeasure.
-* `kraft_prior : ∑' i : ι, 2⁻¹ ^ KP (Encodable.encode i) ≤ 1`: the [Discovery] prior bridge — the prior
-  `w(R') ∝ 2⁻ᴷᴾ⁽ᵉⁿᶜᵒᵈᵉ ᴿ'⁾` over any encodable rule class is a semimeasure (closes [Discovery] FV-1's
-  caveat; this file is [Discovery] **FV-13**).
+* `kraft_prior : ∑' i : ι, 2⁻¹ ^ KP (Encodable.encode i) ≤ 1`: the prior bridge — the prior
+  `w(R') ∝ 2⁻ᴷᴾ⁽ᵉⁿᶜᵒᵈᵉ ᴿ'⁾` over any encodable rule class is a semimeasure.
 * `KP_not_computable`: `KP` is genuinely **uncomputable** (Berry argument, mirroring
   `K_bitlen_not_computable`).
 
 ## What this does NOT establish (out of scope)
 * Two-machine / prefix-machine additive invariance — out of scope (single fixed `Code.eval`; see the
   documented obstruction in `AIT/KolmogorovBitlen.lean`).
-* Does NOT reconnect `KP` to the abstract `r` reals of the MDL corpus.
+* Does NOT relate `KP` to an abstract real-valued description length.
 
-## Hypotheses: paper-stated vs added
-* Paper-stated / faithful: `∑ₓ 2⁻ᴷᴾ⁽ˣ⁾ ≤ 1` for a prefix-free complexity `KP`.
+## Hypotheses: standard vs added
+* Standard: `∑ₓ 2⁻ᴷᴾ⁽ˣ⁾ ≤ 1` for a prefix-free complexity `KP`.
 * Added / modeling: one fixed machine (`Code.eval`); the Elias-γ-class length `2 · Nat.size (·+1)`
   as the concrete self-delimiting code; the input-`0` ("output from nothing") convention inherited
-  from Slice 1.
+  from `AIT/KolmogorovComplexity.lean`.
 -/
 
 
@@ -71,7 +59,8 @@ open scoped ENNReal
 def plen (m : ℕ) : ℕ := 2 * Nat.size (m + 1)
 
 /-- **Prefix-free Kolmogorov complexity**: the least self-delimiting description length `plen` over
-codes that output `x` from input `0`. Well-defined — `Code.const x` computes `x` (Slice 1). -/
+codes that output `x` from input `0`. Well-defined — `Code.const x` computes `x` (see
+`Computes`). -/
 noncomputable def KP (x : ℕ) : ℕ := sInf {l | ∃ c, Computes c x ∧ plen (Encodable.encode c) = l}
 
 /-- `plen` is monotone: more bits in the index ⇒ longer self-delimiting description. -/
@@ -172,9 +161,9 @@ theorem kraft_KP : ∑' x, (2⁻¹ : ℝ≥0∞) ^ (KP x) ≤ 1 := by
   exact (ENNReal.tsum_comp_le_tsum_of_injective K_injective
     (fun m => (2⁻¹ : ℝ≥0∞) ^ (plen m))).trans kraft_plen
 
-/-- **The [Discovery] prior `w(R') = 2⁻ᴷᴾ⁽ᵉⁿᶜᵒᵈᵉ ᴿ'⁾` is a semimeasure** over any encodable rule class
+/-- **The prior `w(R') = 2⁻ᴷᴾ⁽ᵉⁿᶜᵒᵈᵉ ᴿ'⁾` is a semimeasure** over any encodable rule class
 `ι`: `∑' R' : ι, 2⁻¹ ^ KP (encode R') ≤ 1`. Re-index `kraft_KP` along the injective `encode : ι → ℕ`
-(`tsum_comp_le_tsum_of_injective`). This is the prior used in the MDL/discovery corpus. -/
+(`tsum_comp_le_tsum_of_injective`). -/
 theorem kraft_prior {ι : Type*} [Encodable ι] :
     ∑' i : ι, (2⁻¹ : ℝ≥0∞) ^ (KP (Encodable.encode i)) ≤ 1 :=
   (ENNReal.tsum_comp_le_tsum_of_injective Encodable.encode_injective

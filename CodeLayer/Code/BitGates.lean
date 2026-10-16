@@ -1,8 +1,3 @@
-/-
-Copyright (c) 2026 Mykola Palamarchuk. All rights reserved.
-Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Mykola Palamarchuk
--/
 module
 
 public import Mathlib.Tactic.IntervalCases
@@ -27,17 +22,17 @@ outright.
 and `cEqBit` are composed over those, the last two by De Morgan, so they carry no recursion of
 their own. The `tc` bounds all go through the uniform `tc_prec_le`.
 
-The module is deliberately a leaf over the cost model: these are Boolean primitives, and know
+The module stays deliberately light over the cost model: these are Boolean primitives, and know
 nothing of the learners and arithmetic codes assembled from them.
 -/
 
--- "deliberately a leaf … knows nothing of the learners … assembled from them"
+-- "deliberately light … knows nothing of the learners … assembled from them"
 
 @[expose] public section
 
-assert_not_exists OneDL.solve_decides
+assert_not_exists DecisionList.solve_decides
 
-namespace OneDL
+namespace BitGates
 
 open Nat.Partrec (Code)
 open Nat.Partrec.Code
@@ -242,4 +237,4 @@ theorem tc_cAnd_bit {a b : ℕ} (ha : a ≤ 1) (hb : b ≤ 1) : tc cAnd (Nat.pai
 theorem tc_cEqBit_bit {a b : ℕ} (ha : a ≤ 1) (hb : b ≤ 1) : tc cEqBit (Nat.pair a b) ≤ 2008 := by
   have := tc_cEqBit_le a b; omega
 
-end OneDL
+end BitGates

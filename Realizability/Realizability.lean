@@ -1,27 +1,16 @@
-/-
-Copyright (c) 2026 Mykola Palamarchuk. All rights reserved.
-Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Mykola Palamarchuk
--/
 module
 
 public import Mathlib.CategoryTheory.Category.Basic
 public import Mathlib.Computability.PartrecCode
 public import Mathlib.Data.ZMod.Basic
 
--- Formal-check file, not Mathlib-destined: opt out of the house-style linters.
-set_option linter.style.header false
-set_option linter.style.longLine false
 
 /-!
-# The realizability layer of Rep(S): finite assemblies over a universal machine ([Decoupling] §4.1)
+# The realizability layer: finite assemblies over a universal machine
 
-Provenance: [Decoupling] §4.1 (Definition 4.1) — the realizability content of Rep(S): objects are
-finite sets encoded into work memory, and **every morphism carries a code that is itself a value**
-("functions as data"). FV-10 (`ALT/RepFintype.lean` in the companion library
-`lean-algorithmic-learning-theory`) certified the finite-set categorical *shape*; this file adds the
-**realizability layer** FV-10 explicitly left paper-level — morphisms are *realized* by codes for an
-actual universal machine.
+Objects are finite sets encoded as natural numbers (codes), and **every morphism carries a code
+that is itself a value**: morphisms are *realized* by codes for an actual
+universal machine.
 
 ## Why this is novel infrastructure
 Realizability **categories** — assemblies together with their categorical structure — are absent
@@ -32,29 +21,30 @@ their realizability semantics accompanying Cohen, Grunfeld, Kirst and Miquey (20
 with UniMath's Coq Cartesian-closed category of partial equivalence relations (a realizability
 category in the sense of van Oosten 2008) — both in other foundations, not portable to Lean.
 What Mathlib *does* ship is the full
-substrate of Kleene's first partial combinatory algebra — `Nat.Partrec.Code` with a universal `eval`,
-the s-m-n theorem (`curry`/`eval_curry`), identity (`Code.id`/`eval_id`), composition (`Code.comp`,
-`eval (comp cf cg) n = eval cg n >>= eval cf`), and `exists_code` — but never assembles it into a
-realizability structure. We build that layer here, directly on `Nat.Partrec.Code`: realizers are
-genuine codes (`Denumerable Code`, so each realizer *is a value*), the evaluator is Mathlib's
-verified universal `eval`, and no bespoke universal machine is introduced.
+substrate of Kleene's first partial combinatory algebra — `Nat.Partrec.Code` with a universal
+`eval`, the s-m-n theorem (`curry`/`eval_curry`), identity (`Code.id`/`eval_id`), composition
+(`Code.comp`, `eval (comp cf cg) n = eval cg n >>= eval cf`), and `exists_code` — but never
+assembles it into a realizability structure. We build that layer here, directly on
+`Nat.Partrec.Code`: realizers are genuine codes (`Denumerable Code`, so each realizer *is a value*),
+the evaluator is Mathlib's verified universal `eval`, and no bespoke universal machine is
+introduced.
 
 ## What this establishes
 * `Assembly`: a finite carrier with an injective encoding `enc : carrier → ℕ` into codes (the
-  `s_work` encoding of an object). `Assembly.FitsIn sworkBits`: all codes `< 2^{sworkBits}`.
-* `Realizes f`: the **functions-as-data** predicate — a code `r` *tracks* `f`, i.e.
+  encoding of an object). `Assembly.FitsIn sworkBits`: all codes `< 2^{sworkBits}`.
+* `Realizes f`: the **realizes** predicate — a code `r` *tracks* (realizes) `f`, i.e.
   `eval r (enc x) = enc (f x)` for all `x`. The realizer is a value (a `Code`).
 * `realizes_id`, `realizes_comp`: identity (`Code.id`) and composition (`Code.comp`) are realized —
   so realized functions are closed under the categorical operations.
-* `instance : Category Assembly` with `Hom A B := { f // Realizes f }`: the **realizability category**
-  of finite assemblies — a genuine `CategoryTheory.Category`, morphisms being exactly the
-  code-realizable functions (the realizer existentially witnessed = "functions as data").
+* `instance : Category Assembly` with `Hom A B := { f // Realizes f }`: the **realizability
+  category** of finite assemblies — a genuine `CategoryTheory.Category`, morphisms being exactly the
+  code-realizable functions (the realizer existentially witnessed).
 
 ## Boundary
 Objects here are finite assemblies with a *single-valued* encoding (each element is its code), the
-faithful reading of §4.1's "objects as subsets of `{0,1}^{|s_work|}`". The Cartesian-closed structure
+reading of objects as subsets of `{0,1}^{sworkBits}`. The Cartesian-closed structure
 of this realizability category (exponentials as codes realizing morphisms — combinatory completeness
-via k/s) is the next increment; this file establishes the category and the functions-as-data layer.
+via k/s) is the next increment; this file establishes the category and the realizers of functions.
 -/
 
 
@@ -65,22 +55,22 @@ namespace Realizability
 open Nat.Partrec CategoryTheory
 
 /-- A finite **assembly**: a finite carrier together with an injective encoding of its elements as
-codes (numbers) — an object of Rep(S) encoded into work memory (§4.1). -/
+codes (numbers) — an object of the realizability category. -/
 structure Assembly where
   /-- the underlying finite set of elements. -/
   carrier : Type
   [fin : Fintype carrier]
-  /-- the `s_work` encoding: each element gets a code -/
+  /-- the encoding: each element gets a code -/
   enc : carrier → ℕ
   /-- the encoding is faithful (distinct elements, distinct codes) -/
   enc_inj : Function.Injective enc
 
 attribute [instance] Assembly.fin
 
-/-- The assembly's codes fit in `sworkBits` bits of work memory (§4.1: objects ⊆ `{0,1}^{|s_work|}`). -/
+/-- The assembly's codes fit in `sworkBits` bits (objects ⊆ `{0,1}^{sworkBits}`). -/
 def Assembly.FitsIn (A : Assembly) (sworkBits : ℕ) : Prop := ∀ x, A.enc x < 2 ^ sworkBits
 
-/-- **Functions as data** (§4.1): a function `f` is *realized* if some code `r` tracks it — the
+/-- A function `f` is **realized** by a code if some code `r` tracks it — the
 universal evaluator applied to `r` and an element's code returns the code of the image. The realizer
 `r` is itself a value (a `Code`). -/
 def Realizes {A B : Assembly} (f : A.carrier → B.carrier) : Prop :=
@@ -101,7 +91,7 @@ theorem realizes_comp {A B C : Assembly} {g : B.carrier → C.carrier} {f : A.ca
   exact (Part.bind_some _ rg.eval).trans (hrg (f x))
 
 /-- The **realizability category** of finite assemblies: morphisms are exactly the code-realizable
-functions (the realizer existentially witnessed — functions as data). A genuine
+functions (the realizer existentially witnessed). A genuine
 `CategoryTheory.Category`. -/
 instance : Category Assembly where
   Hom A B := { f : A.carrier → B.carrier // Realizes f }
@@ -111,20 +101,15 @@ instance : Category Assembly where
   comp_id _ := rfl
   assoc _ _ _ := rfl
 
-/-! ### Every function between finite assemblies is a morphism (the §4.1 finiteness fact)
+/-! ### Every function between finite assemblies is a morphism (the finiteness fact)
 
-§4.1 records, as the reason no "computation budget" clause is needed, that *because the objects are
-finite, every morphism is a total function that halts on every input*. We machine-check exactly that
-converse-free fact: **every** function between finite assemblies is realized by a code, so it is a
+*Because the objects are finite, every morphism is a total function that halts on every input*, so
+no "computation budget" clause is needed. We machine-check exactly that converse-free fact:
+**every** function between finite assemblies is realized by a code, so it is a
 genuine morphism of the realizability category — not merely a total set-function. The realizer is a
 code doing finite table lookup over the (injectively encoded) domain, built by folding `Primrec.ite`
 over `Finset.univ` and extracting a code via `Nat.Partrec.Code.exists_code`.
-
-**Consequence for §6.3 (Theorem 6.3, L2a/L2b).** The bounded proof-checker `Prf : Formula × ProofCode
-→ Bool` and the decision morphism `Decide : Formula → Bool` are functions between *finite* objects
-(`GodelChecker.Formula`/`ProofCode` are `Fintype`s), so by `realizes_of_finite` they are morphisms of
-Rep(S). This discharges, at the level of the realizability category, the "`Prf`/`Decide` is a
-morphism of Rep(S)" step that §6.3 previously asserted from finiteness — now machine-checked. -/
+ -/
 
 /-- Finite table lookup at the ℕ level: the value paired with the first matching key, else `0`.
 The realizer-defining function behind `realizes_of_finite`. -/
@@ -168,9 +153,8 @@ theorem tableFn_eval {k v : ℕ} : ∀ l : List (ℕ × ℕ), (k, v) ∈ l →
         rw [ite_eq_right hk, hrec]
 
 /-- **Every function between finite assemblies is realized** — a morphism of the realizability
-category. The §4.1 fact that finiteness makes every total function a morphism (functions-as-data: the
-realizer is an explicit code). In particular the §6.3 `Prf`/`Decide` maps on finite
-`Formula`/`ProofCode` objects are morphisms of Rep(S), not merely total Boolean functions. -/
+category. Finiteness makes every total function a morphism (the
+realizer is an explicit code). -/
 theorem realizes_of_finite {A B : Assembly} (f : A.carrier → B.carrier) : Realizes f := by
   classical
   set pts : List (ℕ × ℕ) := (Finset.univ.toList).map (fun x => (A.enc x, B.enc (f x))) with hpts
@@ -238,12 +222,12 @@ theorem pair_realizes {A B C : Assembly} {f : C.carrier → A.carrier} {g : C.ca
 
 /-! ### Combinatory completeness: the evaluation and currying realizers (toward the exponential)
 
-The realizability *exponential* `[A ⇒ B]` of §4.3 needs two computational ingredients — a code that
+The realizability *exponential* `[A ⇒ B]` needs two computational ingredients — a code that
 *applies* a realizer to an argument (evaluation), and one that *specializes* a realizer in its first
 argument (currying / s-m-n). Both are provided here over `Nat.Partrec.Code`. These are the
-"functions as data" universal-property content: realizer codes can themselves be applied and built.
+universal-property content: realizer codes can themselves be applied and built.
 (Packaging `[A ⇒ B]` as an assembly *object* additionally needs the **modest/relational** form of
-`Assembly` — each morphism realized by *many* codes, "under extensional equality" §4.3 — a
+`Assembly` — each morphism realized by *many* codes, "under extensional equality" — a
 generalization of the single-encoding `Assembly` here; see the module note.) -/
 
 /-- **The universal evaluator as a code** (the evaluation realizer): a single code `E` that applies
@@ -263,15 +247,15 @@ theorem universal_evaluator :
 
 /-- **The currying realizer** (s-m-n): specializing a realizer `r` of a two-argument map in its
 first argument `c` yields a realizer `curry r c` of the one-argument residual —
-`(curry r c) · a = r · ⟨c, a⟩`. This is Mathlib's `eval_curry`, the form §4.3 uses to build
+`(curry r c) · a = r · ⟨c, a⟩`. This is Mathlib's `eval_curry`, the form used to build
 `[A ⇒ B]` (a realizer for `a ↦ g(c,a)` from one for `g`). -/
 theorem currying_realizer (r : Nat.Partrec.Code) (c a : ℕ) :
     (Nat.Partrec.Code.curry r c).eval a = r.eval (Nat.pair c a) :=
   Nat.Partrec.Code.eval_curry r c a
 
-/-! ### The modular-counter instance: the FV-6 successor is functions-as-data -/
+/-! ### The modular-counter instance: the successor is realized -/
 
-/-- The modular-counter assembly (the FV-6 carrier `ZMod (n+1)`, encoded by `ZMod.val`).
+/-- The modular-counter assembly (the carrier `ZMod (n+1)`, encoded by `ZMod.val`).
 Reducible so the carrier's `Add`/`One`/`ZMod.val` instances are visible at use sites. -/
 abbrev counterAssembly (n : ℕ) : Assembly :=
   { carrier := ZMod (n + 1)
@@ -279,7 +263,8 @@ abbrev counterAssembly (n : ℕ) : Assembly :=
     enc_inj := ZMod.val_injective (n + 1) }
 
 /-- The core fact on the explicit carrier `ZMod (n+1)`: a code tracks the modular successor on
-`ZMod.val`-encodings. Obtained from the computable `m ↦ (m+1) % (n+1)` via Mathlib's `exists_code`. -/
+`ZMod.val`-encodings. Obtained from the computable `m ↦ (m+1) % (n+1)` via Mathlib's
+`exists_code`. -/
 theorem exists_code_tracks_succ (n : ℕ) :
     ∃ c : Nat.Partrec.Code, ∀ x : ZMod (n + 1),
       c.eval (ZMod.val x) = Part.some (ZMod.val (x + 1)) := by
@@ -293,10 +278,11 @@ theorem exists_code_tracks_succ (n : ℕ) :
     rw [Nat.cast_add, Nat.cast_one, ZMod.natCast_zmod_val]
   rw [hcx, e, ZMod.val_natCast]
 
-/-- **The counter's successor is realized** (functions-as-data, concretely): the modular successor
-`step : x ↦ x + 1` on `ZMod (n+1)` — the FV-6 bounded-recursor successor — is a morphism of the
+/-- **The counter's successor is realized** (concretely): the modular successor
+`step : x ↦ x + 1` on `ZMod (n+1)` is a morphism of the
 realizability category, its realizer a value (a `Nat.Partrec.Code`). Packaged from
-`exists_code_tracks_succ` by defeq (`counterAssembly`'s carrier is `ZMod (n+1)`, `enc` is `ZMod.val`). -/
+`exists_code_tracks_succ` by defeq (`counterAssembly`'s carrier is `ZMod (n+1)`, `enc` is
+`ZMod.val`). -/
 theorem counter_step_realizes (n : ℕ) :
     Realizes (A := counterAssembly n) (B := counterAssembly n) (fun x : ZMod (n + 1) => x + 1) :=
   exists_code_tracks_succ n

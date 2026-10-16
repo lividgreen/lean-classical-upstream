@@ -1,8 +1,3 @@
-/-
-Copyright (c) 2026 Mykola Palamarchuk. All rights reserved.
-Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Mykola Palamarchuk
--/
 module
 
 public import Mathlib.Data.Nat.Pairing
@@ -26,7 +21,7 @@ bit-length.
 * `size_le_self` — a bit-length never exceeds the value it measures. Available at zero, where the
   `max`-form bounds are not.
 
-The module is deliberately a leaf: it is arithmetic on bit-lengths, and knows nothing about the
+The module stays deliberately light: it is arithmetic on bit-lengths, and knows nothing about the
 programs whose sizes are being counted.
 -/
 

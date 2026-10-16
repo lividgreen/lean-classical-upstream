@@ -1,22 +1,13 @@
-/-
-Copyright (c) 2026 Mykola Palamarchuk. All rights reserved.
-Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Mykola Palamarchuk
--/
 module
 
 public import Mathlib.Data.ENat.Lattice
 public import CodeLayer.BinaryKraft
-public import AIT.KolmogorovComplexity
-
--- Formal-check file, not Mathlib-destined: opt out of the house-style header linter.
-set_option linter.style.header false
+public import CodeLayer.Code.EvalLaws
 
 /-!
 # Additive AST program-length complexity `KE` (two-machine invariance, part one)
 
-Provenance: [SQ] §2 (description/time-bounded complexity) and [Discovery] §1.1 (`K(R) = r`, program
-length in bits). Extends `AIT/KolmogorovComplexity.lean` (`Computes`, `const_computes`) with an
+Extends `CodeLayer/Code/EvalLaws.lean` (`Computes`, `const_computes`) with an
 **additive** program-length measure that the index/bit-length measures (`codelen`, `codelen'`)
 cannot provide.
 
@@ -26,9 +17,9 @@ Status: PROVED.
 `AIT/KolmogorovComplexity.lean` and `AIT/KolmogorovBitlen.lean` measure a program by its Gödel index
 `encode c` (resp. `Nat.size (encode c)`). Mathlib's `encodeCode` pairs children with the quadratic
 `Nat.pair` at every binary node, so `encode (comp cf cg)` is *super-linear* in
-`encode cf + encode cg`; there is no additive law `|comp cf cg| = |cf| + |cg| + O(1)`. Every corpus
-docstring flags exactly this blowup as the obstruction to the two-machine additive-invariance bound
-`K_U ≤ K_V + c_{U,V}` and to a clean `KE(x) ≤ K_d(x) + c_d`.
+`encode cf + encode cg`; there is no additive law `|comp cf cg| = |cf| + |cg| + O(1)`. This blowup
+is the obstruction to the two-machine additive-invariance bound `K_U ≤ K_V + c_{U,V}` and to a
+clean `KE(x) ≤ K_d(x) + c_d`.
 
 `E` fixes this by serializing the AST in prefix (Polish) form with a fixed 3-bit opcode per node, so
 program length is additive **by construction**: `|E (comp cf cg)| = 3 + |E cf| + |E cg|`
@@ -37,7 +28,8 @@ program length is additive **by construction**: `|E (comp cf cg)| = 3 + |E cf| +
 ## What this establishes
 * `E`, `elen`, `KE`: self-delimiting AST encoding, its bit-length, and the induced complexity.
 * `E_len_comp`, `E_len_pair`: exact additive length laws (the payoff `encode` cannot give).
-* `KE_le`, `exists_min_E`: the minimization API (mirrors Slice-1 `K_le`/`exists_min_code`).
+* `KE_le`, `exists_min_E`: the minimization API (mirrors `K_le`/`exists_min_code` of
+  `AIT/KolmogorovComplexity.lean`).
 * `KE_comp_le`, `KE_subadditive`: compositional upper bounds — `KE (Nat.pair x y) ≤ KE x + KE y + 3`
   (the additive subadditivity the index measure cannot prove).
 * `E_append_inj`, `E_injective`: **parse uniqueness** — the prefix encoding decodes: a serialized
@@ -46,25 +38,25 @@ program length is additive **by construction**: `|E (comp cf cg)| = 3 + |E cf| +
 * `card_KE_le`, `finite_KE_le`: the **counting bound** — at most `2 ^ (L + 1)` naturals have
   `KE ≤ L`, because distinct values need distinct shortest programs, `E` is injective, and there
   are fewer than `2 ^ (L + 1)` bit-strings of length at most `L`. This is the incompressibility
-  method's supply side, consumed by [Persistence] §7.
+  method's supply side.
 * `summable_two_pow_neg_KE`, `finset_card_KE_le_two_pow`, `card_KE_le_two_pow`: the **sharp count**
   — at most `2 ^ L` naturals have `KE ≤ L`, by Kraft's inequality for `KE` (`kraft_KE`) rather than
   by counting bit-strings, the same three-line argument `PrefixMachine.finset_card_KB_le` runs for
   `KB`. `card_KE_le` keeps its constant `2 ^ (L + 1)`.
-* `KE_t`, `KE_le_KE_t`, `KE_t_antitone`: time-bounded refinement (scaffold for [SQ] Prop 2.2),
-  a one-symbol swap of the corpus `K_t` construction (`elen` for the index `codelen`).
+* `KE_t`, `KE_le_KE_t`, `KE_t_antitone`: time-bounded refinement,
+  a one-symbol swap of the `K_t` construction (`elen` for the index `codelen`).
 
 ## What this does NOT establish (flagged)
 * Two-machine additive invariance itself (the second half): needs a length-efficient *binary*
   constant `bconst : ℕ → Code` with `|E (bconst n)| = O(Nat.size n)` — Mathlib's `Code.const` is
   a *unary* tower (`const (n+1) = comp succ (const n)`), so `|E (Code.const n)| = Θ(n)`,
   exponential in bit-length. Deferred to a separate sub-project (the `bconst` gate).
-* Does NOT reconnect `KE` to the abstract `r`/`K` reals of the MDL corpus.
+* Does NOT relate `KE` to an abstract real-valued description length.
 
-## Hypotheses: paper-stated vs added
-* Paper-stated / faithful: additive program length; subadditivity `KE(⟨x,y⟩) ≤ KE x + KE y + O(1)`.
+## Hypotheses: standard vs added
+* Standard: additive program length; subadditivity `KE(⟨x,y⟩) ≤ KE x + KE y + O(1)`.
 * Added / modeling: one fixed machine (`Code.eval`); 3-bit Polish opcode; input-`0` convention
-  (`Computes`) inherited from Slice 1.
+  (`Computes`) inherited from `CodeLayer/Code/EvalLaws.lean`.
 -/
 
 
@@ -90,7 +82,7 @@ def E : Code → List Bool
 def elen (c : Code) : ℕ := (E c).length
 
 /-- **Additive** Kolmogorov complexity: least `elen`-length over codes computing `x` from input `0`.
-Well-defined — `Code.const x` computes `x` (Slice 1), so the minimand is nonempty. -/
+Well-defined — `Code.const x` computes `x` (see `Computes`), so the minimand is nonempty. -/
 noncomputable def KE (x : ℕ) : ℕ := sInf {l | ∃ c, Computes c x ∧ elen c = l}
 
 /-- The additive length law for `comp` (the payoff the `encode` index measure cannot give): the
@@ -214,7 +206,7 @@ open InformationTheory in
 /-- **The serialization is uniquely decodable**: two lists of programs whose concatenations agree
 are the same list. Parse uniqueness (`E_append_inj`) peels one program off each side at a time —
 the head programs coincide and the tails still agree, so the induction closes. -/
-theorem uniquelyDecodable_range_E : IsUniquelyDecodable (Set.range E) := by
+theorem isUniquelyDecodable_range_E : IsUniquelyDecodable (Set.range E) := by
   intro L₁
   induction L₁ with
   | nil =>
@@ -242,7 +234,7 @@ at `E`. -/
 theorem kraft_sum_le_one (F : Finset Code) :
     ∑ c ∈ F, (1 / 2 : ℝ) ^ elen c ≤ 1 := by
   simpa [elen] using
-    BinaryKraft.indexed_finset_sum_le_one E E_injective uniquelyDecodable_range_E F
+    BinaryKraft.indexed_finset_sum_le_one E E_injective isUniquelyDecodable_range_E F
 
 /-- **Kraft's inequality for the additive encoding**: `∑ 2 ^ (-elen c) ≤ 1`, over all programs.
 Every finite subtotal is at most one (`kraft_sum_le_one`), and the summands are nonnegative, so the
@@ -250,7 +242,7 @@ sum over the whole (countably infinite) space of programs is too. Short programs
 scarce by arithmetic, not by convention: halving the length doubles the price. -/
 theorem kraft_KP_E : ∑' c : Code, (1 / 2 : ℝ) ^ elen c ≤ 1 := by
   simpa [elen] using
-    BinaryKraft.indexed_tsum_le_one E E_injective uniquelyDecodable_range_E
+    BinaryKraft.indexed_tsum_le_one E E_injective isUniquelyDecodable_range_E
 
 /-! ## Counting programs: how many naturals are `L`-compressible
 
@@ -322,11 +314,11 @@ theorem minCode_E_injective : Function.Injective fun x => E (minCode x) := by
 program-indexed series (summable by `BinaryKraft.indexed_summable` at the injective, uniquely
 decodable `E`) reindexed along `minCode`, an injection (`minCode_E_injective`), so its summability
 is that of a subseries. The summability `Summable.sum_le_tsum` needs in the sharp count
-`finset_card_KE_le_two_pow` ([Persistence] §7, FV-8), and the first step of `kraft_KE`. -/
+`finset_card_KE_le_two_pow`, and the first step of `kraft_KE`. -/
 theorem summable_two_pow_neg_KE : Summable fun x : ℕ => (1 / 2 : ℝ) ^ KE x := by
   have hminj : Function.Injective minCode := minCode_E_injective.of_comp
   have hg : Summable fun c : Code => (1 / 2 : ℝ) ^ elen c := by
-    simpa [elen] using BinaryKraft.indexed_summable E E_injective uniquelyDecodable_range_E
+    simpa [elen] using BinaryKraft.indexed_summable E E_injective isUniquelyDecodable_range_E
   simpa [Function.comp_def, elen_minCode] using hg.comp_injective hminj
 
 /-- **Kraft's inequality for `KE` itself**: `∑ 2 ^ (-KE x) ≤ 1`, over all naturals — the
@@ -337,7 +329,7 @@ program-indexed sum reindexed along an injection and is bounded by it. -/
 theorem kraft_KE : ∑' x : ℕ, (1 / 2 : ℝ) ^ KE x ≤ 1 := by
   have hminj : Function.Injective minCode := minCode_E_injective.of_comp
   have hg : Summable fun c : Code => (1 / 2 : ℝ) ^ elen c := by
-    simpa [elen] using BinaryKraft.indexed_summable E E_injective uniquelyDecodable_range_E
+    simpa [elen] using BinaryKraft.indexed_summable E E_injective isUniquelyDecodable_range_E
   have hf : Summable fun x : ℕ => (1 / 2 : ℝ) ^ KE x := summable_two_pow_neg_KE
   have hle : ∑' x : ℕ, (1 / 2 : ℝ) ^ KE x ≤ ∑' c : Code, (1 / 2 : ℝ) ^ elen c :=
     Summable.tsum_le_tsum_of_inj minCode hminj (fun c _ => by positivity)
@@ -356,7 +348,7 @@ value carries its own shortest program (`minCode_E_injective`), and those progra
 of length at most `L`, of which there are fewer than `2 ^ (L + 1)` (`card_bitLists`).
 
 A description budget of `L` bits buys at most `2 ^ (L + 1)` objects: this is the supply side of the
-incompressibility method, and the counting half of the collapse of [Persistence] §7. -/
+incompressibility method. -/
 theorem card_KE_le (L : ℕ) : {x : ℕ | KE x ≤ L}.ncard ≤ 2 ^ (L + 1) := by
   have hmaps : ∀ x ∈ {x : ℕ | KE x ≤ L}, (fun x => E (minCode x)) x ∈ (↑(bitLists L) : Set _) :=
     fun x hx => mem_bitLists (by rw [length_E_minCode]; exact hx)
@@ -372,8 +364,7 @@ within a budget of `L` bits, against the `2 ^ (L + 1)` of `card_KE_le`. Each mem
 least `2 ^ (-L)` in the Kraft series (`pow_le_pow_of_le_one`), so `F.card` copies of that weight sit
 below the series' partial sum over `F` (`Finset.sum_le_sum`), below the full series
 (`Summable.sum_le_tsum`, at `summable_two_pow_neg_KE`), below one (`kraft_KE`). The count is
-`PrefixMachine.finset_card_KB_le`'s argument at `KE`, and needs no finiteness hypothesis. See
-[Persistence] §7 and FV-8, whose counting chain carries the string-counting constant. -/
+`PrefixMachine.finset_card_KB_le`'s argument at `KE`, and needs no finiteness hypothesis. -/
 theorem finset_card_KE_le_two_pow (L : ℕ) (F : Finset ℕ) (hF : ∀ x ∈ F, KE x ≤ L) :
     F.card ≤ 2 ^ L := by
   have hpow : ∀ x ∈ F, (1 / 2 : ℝ) ^ L ≤ (1 / 2 : ℝ) ^ KE x := fun x hx =>
@@ -400,15 +391,15 @@ theorem finset_card_KE_le_two_pow (L : ℕ) (F : Finset ℕ) (hF : ∀ x ∈ F, 
 the finiteness `finite_KE_le` supplies, over its own `Finite.toFinset`. Stated separately from the
 `Finset` form because `Set.ncard` of an infinite set is `0`, so this sentence alone could not fail;
 the `Finset` form is what shows the bound bites. Sharpens `card_KE_le`'s constant, which is kept
-as stated ([Persistence] §7, FV-8). -/
+as stated. -/
 theorem card_KE_le_two_pow (L : ℕ) : {x : ℕ | KE x ≤ L}.ncard ≤ 2 ^ L := by
   have hfin := finite_KE_le L
   rw [Set.ncard_eq_toFinset_card _ hfin]
   exact finset_card_KE_le_two_pow L hfin.toFinset (fun x hx => hfin.mem_toFinset.mp hx)
 
-/-! ## Time-bounded refinement (scaffold for [SQ] Prop 2.2)
+/-! ## Time-bounded refinement
 
-A one-symbol swap of the corpus `KolmogorovTimeBounded.K_t` construction: `elen` in place of the
+A one-symbol swap of the `KolmogorovTimeBounded.K_t` construction: `elen` in place of the
 index `codelen`, over the same `evaln` step-budget set. -/
 
 /-- Additive lengths of programs outputting `x` from input `0` within `t` `evaln`-steps. -/

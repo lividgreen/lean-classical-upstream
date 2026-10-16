@@ -1,20 +1,12 @@
-/-
-Copyright (c) 2026 Mykola Palamarchuk. All rights reserved.
-Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Mykola Palamarchuk
--/
 module
 
 public import AIT.KraftChaitin
 public import AIT.CodingTheoremDecoder
 
--- Formal-check file, not Mathlib-destined: opt out of the house-style header linter.
-set_option linter.style.header false
-
 /-!
-# Levin's coding theorem, `O(1)` form ([Discovery] §1.1, FV-21)
+# Levin's coding theorem, `O(1)` form
 
-Provenance: [Discovery] §1.1 and FV-21, over the online Kraft–Chaitin assignment
+Over the online Kraft–Chaitin assignment
 `PrefixMachine.kcRun`/`kcWord` of `AIT/KraftChaitin.lean` and the universal prefix machine
 `PrefixMachine.KB` of `AIT/PrefixMachine.lean`.
 
@@ -726,7 +718,7 @@ theorem coding_theorem_mul {μ : ℕ → ℝ} (hμ : LowerSemicomputable μ) (hn
 theorem QB_le_two_pow_mul : ∃ C : ℕ, ∀ x : ℕ, QB x ≤ 2 ^ C * (1 / 2 : ℝ) ^ (KB x) :=
   coding_theorem_mul QB_lsc QB_nonneg sum_QB_le_one
 
-/-- **`QB` is a universal (maximal) lower-semicomputable semimeasure** ([Discovery] §1.1, FV-25):
+/-- **`QB` is a universal (maximal) lower-semicomputable semimeasure**:
 it dominates every lower-semicomputable semimeasure up to a constant factor. The classical
 statement fixes its `m` as ANY maximal such semimeasure, so this shows `QB` is a universal
 semimeasure — never "the" universal semimeasure. -/

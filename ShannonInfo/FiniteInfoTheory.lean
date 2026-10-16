@@ -1,32 +1,25 @@
-/-
-Copyright (c) 2026 Mykola Palamarchuk. All rights reserved.
-Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Mykola Palamarchuk
--/
 module
 
 public import Mathlib.Algebra.BigOperators.Field
 public import Mathlib.Analysis.SpecialFunctions.Log.NegMulLog
 
--- Formal-check file, not Mathlib-destined: opt out of the house-style linters.
-set_option linter.style.header false
-set_option linter.style.longLine false
 
 /-!
 # Finite-discrete Shannon information theory — scaffolding toward Cheng's Theorem 4
 
-Provenance: the information-theoretic core of `Cheng, R. (2026)` Theorem 4 ([Discovery] §4 retention),
-re-checked in `ShannonInfo/ChengCCC.lean`. That file machine-checks the misidentification / forgetting
-lower bounds *modulo* two named hypotheses — the **data-processing inequality** (`I(T;θ) ≤ C_ctx`)
-and **Fano's inequality** (`P_e ≥ (H(T|θ) − 1)/log(K−1)`). Mathlib has neither (only
-`Real.negMulLog`, the binary-entropy *function*, and topological entropy), so discharging them
+The information-theoretic core of `Cheng, R. (2026)` Theorem 4,
+re-checked in `ShannonInfo/ChengCCC.lean`. That file machine-checks the misidentification /
+forgetting lower bounds *modulo* two named hypotheses — the **data-processing inequality**
+(`I(T;θ) ≤ C_ctx`) and **Fano's inequality** (`P_e ≥ (H(T|θ) − 1)/log(K−1)`). Mathlib has neither
+(only `Real.negMulLog`, the binary-entropy *function*, and topological entropy), so discharging them
 requires building a small finite-discrete information-theory library. This file builds it bottom-up.
 
 ## Status (honest)
 Done here (all `sorry`-free):
 * the entropy definition and its nonnegativity for a pmf (`entropy`, `entropy_nonneg`);
-* **mutual information** of a joint pmf and its **nonnegativity** (`mutualInfo`, `mutualInfo_nonneg`),
-  via the finite Gibbs inequality (`gibbs_term`, from `Real.log_le_sub_one_of_pos`);
+* **mutual information** of a joint pmf and its **nonnegativity** (`mutualInfo`,
+  `mutualInfo_nonneg`), via the finite Gibbs inequality (`gibbs_term`, from
+  `Real.log_le_sub_one_of_pos`);
 * **joint/conditional entropy** and the entropy form of MI — `I(X;Y) = H(X) − H(X|Y)`
   (`Hjoint`, `condEntropy`, `mutualInfo_eq_entropy`, `mutualInfo_eq_sub_condEntropy`): this
   **discharges the `hCond` identity** of `ChengCCC.misid_lower_bound`;
@@ -36,7 +29,7 @@ Done here (all `sorry`-free):
   (`mi_add_condMutualInfo`, `mi_add_condMutualInfoZ`) and the Markov-zero step
   (`MarkovCI`, `markov_condMutualInfo_zero`);
 * the **data-processing inequality** `I(X;Z) ≤ I(X;Y)` for a Markov chain `X → Y → Z`
-  (`dataProcessing`): this is the rigorous content **discharging `hDPI`** at the chain `T → c → θ`;
+  (`data_processing`): this is the rigorous content **discharging `hDPI`** at the chain `T → c → θ`;
 * **Fano's inequality** for a decoder `g : β → α` with error probability `Pe`: the core bound
   `H(X|Y) ≤ log 2 + Pe·log(K−1)` (`condEntropy_le_log2`) and the rearranged
   `(condEntropy μ − 1)/log(K−1) ≤ Pe` (`fano'`) — this is exactly **`ChengCCC`'s `hFano`**. The
@@ -46,8 +39,8 @@ Done here (all `sorry`-free):
 **Not yet done** (the remaining Mathlib-gap frontier): the *tight* Fano constant
 `Real.binEntropy Pe` (≤ `log 2`) in place of `log 2` — that refinement needs Jensen on the concavity
 of `binEntropy` (and a per-`y` normalisation); the looser `log 2` is all `fano'`/`ChengCCC` consume.
-`ChengCCC`'s abstract arithmetic skeletons (`misid_lower_bound`, `forgetting_lower_bound`) still take
-Fano/DPI/`hCond` as explicit hypotheses, but the wiring IS done: `cheng_misid_bound_discharged`
+`ChengCCC`'s abstract arithmetic skeletons (`misid_lower_bound`, `forgetting_lower_bound`) still
+take Fano/DPI/`hCond` as explicit hypotheses, but the wiring IS done: `cheng_misid_bound_discharged`
 and `cheng_forgetting_bound_discharged` discharge all three against these theorems for the Markov
 chain `T → c → θ`, leaving only the modelling setup (and, for forgetting, Cheng's informal Step-4
 link `hConn`). No `sorry` is used; missing results are simply absent.
@@ -329,7 +322,8 @@ log-argument is `1`, so the conditional mutual information vanishes. -/
 theorem markov_condMutualInfo_zero (ν : α → β → γ → ℝ) (hnn : ∀ a b c, 0 ≤ ν a b c)
     (hM : MarkovCI ν) : condMutualInfo ν = 0 := by
   unfold condMutualInfo
-  refine Finset.sum_eq_zero fun a _ => Finset.sum_eq_zero fun b _ => Finset.sum_eq_zero fun c _ => ?_
+  refine Finset.sum_eq_zero fun a _ => Finset.sum_eq_zero fun b _ => Finset.sum_eq_zero fun c _ =>
+      ?_
   rcases eq_or_lt_of_le (hnn a b c) with h0 | hpos
   · rw [← h0, zero_mul]
   · have hXY : 0 < margXY ν a b :=
@@ -340,9 +334,10 @@ theorem markov_condMutualInfo_zero (ν : α → β → γ → ℝ) (hnn : ∀ a 
       rw [hM a b c]; exact div_self (ne_of_gt (mul_pos hXY hYZ))
     rw [harg, Real.log_one, mul_zero]
 
-/-- **Chain rule, one half:** `I(X;Y) + I(X;Z|Y) = ∑_{x,y,z} ν·log( ν / (p(x)·p(y,z)) ) = I(X;(Y,Z))`.
-The per-term log identity `log(p(x,y)/(p(x)p(y))) + log(ν p(y)/(p(x,y)p(y,z))) = log(ν/(p(x)p(y,z)))`
-holds on the support (and trivially at the zeros). No Markov assumption. -/
+/-- **Chain rule, one half:**
+`I(X;Y) + I(X;Z|Y) = ∑_{x,y,z} ν·log( ν / (p(x)·p(y,z)) ) = I(X;(Y,Z))`. The per-term log identity
+`log(p(x,y)/(p(x)p(y))) + log(ν p(y)/(p(x,y)p(y,z))) = log(ν/(p(x)p(y,z)))` holds on the support
+(and trivially at the zeros). No Markov assumption. -/
 theorem mi_add_condMutualInfo (ν : α → β → γ → ℝ) (hnn : ∀ a b c, 0 ≤ ν a b c) :
     mutualInfo (margXY ν) + condMutualInfo ν
       = ∑ a, ∑ b, ∑ c, ν a b c * Real.log (ν a b c / (margX ν a * margYZ ν b c)) := by
@@ -474,7 +469,8 @@ theorem mi_add_condMutualInfoZ (ν : α → β → γ → ℝ) (hnn : ∀ a b c,
         = ∑ b, ν a b c * Real.log (margXZ ν a c / (margX ν a * margZ ν c))
     rw [← Finset.sum_mul]
     rfl
-  rw [L2, Finset.sum_congr rfl fun a _ => Finset.sum_comm, condMutualInfoZ, ← Finset.sum_add_distrib]
+  rw [L2, Finset.sum_congr rfl fun a _ => Finset.sum_comm, condMutualInfoZ,
+      ← Finset.sum_add_distrib]
   refine Finset.sum_congr rfl (fun a _ => ?_)
   rw [← Finset.sum_add_distrib]
   refine Finset.sum_congr rfl (fun b _ => ?_)
@@ -492,7 +488,8 @@ theorem mi_add_condMutualInfoZ (ν : α → β → γ → ℝ) (hnn : ∀ a b c,
       have h1 : ν a b c ≤ ∑ c', ν a b c' :=
         Finset.single_le_sum (fun i _ => hnn a b i) (Finset.mem_univ c)
       have h2 : (∑ c', ν a b c') ≤ margX ν a :=
-        Finset.single_le_sum (fun i _ => Finset.sum_nonneg fun c' _ => hnn a i c') (Finset.mem_univ b)
+        Finset.single_le_sum (fun i _ => Finset.sum_nonneg fun c' _ => hnn a i c')
+            (Finset.mem_univ b)
       linarith
     have hP : (0:ℝ) < margXZ ν a c / (margX ν a * margZ ν c) := div_pos hXZ (mul_pos hX hZ)
     have hQ : (0:ℝ) < ν a b c * margZ ν c / (margXZ ν a c * margYZ ν b c) :=
@@ -507,7 +504,7 @@ theorem mi_add_condMutualInfoZ (ν : α → β → γ → ℝ) (hnn : ∀ a b c,
 `MarkovCI`), `I(X;Z) ≤ I(X;Y)`. Proof: the two chain-rule halves give `I(X;Y) + I(X;Z|Y) =
 I(X;(Y,Z)) = I(X;Z) + I(X;Y|Z)`; Markov makes `I(X;Z|Y) = 0` and `I(X;Y|Z) ≥ 0`. This discharges
 `hDPI` of `ChengCCC.misid_lower_bound` at the Markov chain `T → c → θ` (with `C_ctx ≥ I(c;θ)`). -/
-theorem dataProcessing (ν : α → β → γ → ℝ) (hnn : ∀ a b c, 0 ≤ ν a b c)
+theorem data_processing (ν : α → β → γ → ℝ) (hnn : ∀ a b c, 0 ≤ ν a b c)
     (hsum : ∑ a, ∑ b, ∑ c, ν a b c = 1) (hM : MarkovCI ν) :
     mutualInfo (margXZ ν) ≤ mutualInfo (margXY ν) := by
   have k1 := mi_add_condMutualInfo ν hnn
@@ -527,10 +524,10 @@ theorem mutualInfo_comm (μ : α → β → ℝ) : mutualInfo μ = mutualInfo (f
   rw [mul_comm (marg₁ μ a) (marg₂ μ b)]
 
 /-- **The other DPI direction** `I(X;Z) ≤ I(Y;Z)` under the same Markov chain `X → Y → Z`. Obtained
-from `dataProcessing` by reindexing the (symmetric) chain as `Z → Y → X` (`ν' z y x = ν x y z`) and
+from `data_processing` by reindexing the (symmetric) chain as `Z → Y → X` (`ν' z y x = ν x y z`) and
 transporting through `mutualInfo_comm`. This is the form `ChengCCC` needs: with the capacity bound
 `I(Y;Z) ≤ C_ctx` it gives `I(X;Z) ≤ C_ctx` (here `X = T`, `Y = c`, `Z = θ`). -/
-theorem dataProcessing' (ν : α → β → γ → ℝ) (hnn : ∀ a b c, 0 ≤ ν a b c)
+theorem data_processing' (ν : α → β → γ → ℝ) (hnn : ∀ a b c, 0 ≤ ν a b c)
     (hsum : ∑ a, ∑ b, ∑ c, ν a b c = 1) (hM : MarkovCI ν) :
     mutualInfo (margXZ ν) ≤ mutualInfo (margYZ ν) := by
   have hnn' : ∀ z y x, 0 ≤ (fun z y x => ν x y z) z y x := fun z y x => hnn x y z
@@ -548,7 +545,7 @@ theorem dataProcessing' (ν : α → β → γ → ℝ) (hnn : ∀ a b c, 0 ≤ 
     rw [hY, hM x y z]
     change margXY ν x y * margYZ ν y z = margYZ ν y z * margXY ν x y
     ring
-  have key := dataProcessing (fun z y x => ν x y z) hnn' hsum' hM'
+  have key := data_processing (fun z y x => ν x y z) hnn' hsum' hM'
   rw [mutualInfo_comm (margXZ ν), mutualInfo_comm (margYZ ν)]
   exact key
 
@@ -609,8 +606,9 @@ private lemma entropy_masses_le {S : Type*} (T : Finset S) (f : S → ℝ) (hf :
             rw [hlogdiv, hnml]; ring
     linarith [key, hexpand]
 
-/-- Binary instance of `entropy_masses_le`: `negMulLog s + negMulLog m ≤ negMulLog(s+m) + (s+m)·log 2`.
-This is the per-symbol "binary entropy ≤ log 2" bound (unnormalised). -/
+/-- Binary instance of `entropy_masses_le`:
+`negMulLog s + negMulLog m ≤ negMulLog(s+m) + (s+m)·log 2`. This is the per-symbol "binary entropy ≤
+log 2" bound (unnormalised). -/
 private lemma negMulLog_add_le {s m : ℝ} (hs : 0 ≤ s) (hm : 0 ≤ m) :
     Real.negMulLog s + Real.negMulLog m ≤ Real.negMulLog (s + m) + (s + m) * Real.log 2 := by
   have H := entropy_masses_le (Finset.univ : Finset (Fin 2)) (fun i => ![s, m] i)

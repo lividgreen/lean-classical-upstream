@@ -1,24 +1,16 @@
-/-
-Copyright (c) 2026 Mykola Palamarchuk. All rights reserved.
-Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Mykola Palamarchuk
--/
 module
 
 public import CodeLayer.PolyTime
 
--- Formal-check file, not Mathlib-destined: opt out of the house-style linters.
-set_option linter.style.header false
-set_option linter.style.longLine false
 
 /-!
 # Data layer for the 1-DL and conjunction consistency solvers
 
-Provenance: the native cost model (`CodeLayer/TimeCost.lean`). Builds on `CodeLayer/PolyTime.lean` (`PolyTime`,
-`PolyBounded`, the base/`comp` closures, `polyTime_loop`, `tc_prec_le'`, `exists_two_pow_gt_poly`).
-Downstream: the greedy 1-decision-list consistency solver (`DecisionListSolver.lean`) and the
-conjunction consistency solver (`ConjunctionSolver.lean`), whose scan/peel loops iterate over the
-`m` examples and `k` features.
+Provenance: the native cost model (`CodeLayer/TimeCost.lean`). Builds on `CodeLayer/PolyTime.lean`
+(`PolyTime`, `PolyBounded`, the base/`comp` closures, `polyTime_loop`, `tc_prec_le'`,
+`exists_two_pow_gt_poly`). Downstream: the greedy 1-decision-list consistency solver
+(`DecisionListSolver.lean`) and the conjunction consistency solver (`ConjunctionSolver.lean`), whose
+scan/peel loops iterate over the `m` examples and `k` features.
 
 Besides the instance encoding (`WF`, the flat/indexed accessors, `peel`/`cPeel`), this module also
 carries the labelled bit-example layer shared by every rule-class solver that reads examples
@@ -26,8 +18,8 @@ against a Boolean feature vector: `lblOf`/`fvOf`/`featOf` (an example's label, f
 `j`-th feature bit) and `WFBits` (the binary well-formedness regime both solvers assume).
 
 ## The decode-cost verdict, and the flag-cons PIVOT
-An offset-cons encoding `cons e r = Nat.pair e r + 1` would need a predecessor to decode. There is no
-primitive predecessor in the rfind'-free fragment; the smallest `cPred` (`prec`, recursing on the
+An offset-cons encoding `cons e r = Nat.pair e r + 1` would need a predecessor to decode. There is
+no primitive predecessor in the rfind'-free fragment; the smallest `cPred` (`prec`, recursing on the
 value) iterates VALUE-many times, so `n ≤ tc cPred n` (`cpred_tc_ge`) and hence `tc cPred` is NOT
 poly-bounded (`cPred_tc_not_polyBounded`) — a predecessor-based peel step is value-linear, so route
 (a) FAILS. We therefore PIVOT to a **flag cons**: `nil = 0`, `cons e r = Nat.pair 1 (Nat.pair e r)`,
@@ -40,19 +32,19 @@ which decodes by pure `unpair` (flag `= left`, head `= left ∘ right`, tail `= 
 examples; an example is `Nat.pair label fv` with `fv` a flag-cons list of `k` bits.
 
 ## What this establishes (C2a, the data layer — complete)
-Part 1: encoding + `WF`, the flat accessors `cReadK`/`cReadM` (`PolyTime`, `tc = O(1)`), and the size
-bound `readM/readK inst ≤ Nat.size inst` under `WF` (I2). Part 2: the decode-cost verdict + pivot; the
-`peel` loop (`cPeel`, `O(1)`-`tc` step) and the indexed accessors `getExample`/`getLabel`/`getFeature`,
-each `PolyTime` GIVEN a poly-bit index (`polyTime_peel`); and List-model correctness
-(`getExample_encode`). One residual — `polyTime_peel` needs the index's
-`PolyBounded` as a HYPOTHESIS, since the natural index (`readM`) is only poly-bit under `WF`; that is
-what the solver layer (C2b, `Learning/DecisionListSolver.lean`) must thread.
+Part 1: encoding + `WF`, the flat accessors `cReadK`/`cReadM` (`PolyTime`, `tc = O(1)`), and the
+size bound `readM/readK inst ≤ Nat.size inst` under `WF` (I2). Part 2: the decode-cost verdict +
+pivot; the `peel` loop (`cPeel`, `O(1)`-`tc` step) and the indexed accessors
+`getExample`/`getLabel`/`getFeature`, each `PolyTime` GIVEN a poly-bit index (`polyTime_peel`); and
+List-model correctness (`get_example_encode`). One residual — `polyTime_peel` needs the index's
+`PolyBounded` as a HYPOTHESIS, since the natural index (`readM`) is only poly-bit under `WF`; that
+is what the solver layer (C2b, `Learning/DecisionListSolver.lean`) must thread.
 -/
 
 
 @[expose] public section
 
-namespace OneDL
+namespace DecisionList
 
 open Nat.Partrec (Code)
 open Nat.Partrec.Code
@@ -60,8 +52,9 @@ open TimeCost
 
 /-! ## Step 0 — the predecessor cost verdict: value-linear, hence the flag-cons pivot -/
 
-/-- Every `prec` runs at least `n` unit steps on `Nat.pair a n` (each of the `n` successor unfoldings
-charges `+1`). A magnitude-INDEPENDENT lower bound — the mirror of `tc_prec_le'`'s upper bound. -/
+/-- Every `prec` runs at least `n` unit steps on `Nat.pair a n` (each of the `n` successor
+unfoldings charges `+1`). A magnitude-INDEPENDENT lower bound — the mirror of `tc_prec_le'`'s upper
+bound. -/
 theorem tc_prec_ge (cf cg : Code) (a : ℕ) : ∀ n, n ≤ tc (prec cf cg) (Nat.pair a n) := by
   intro n
   induction n with
@@ -81,8 +74,9 @@ theorem id_not_polyBounded : ¬ PolyBounded (fun n => n) := by
   have hmono : C * (Nat.size (2 ^ j) + 1) ^ k + C ≤ C * (2 * j + 5) ^ k + C := by gcongr
   omega
 
-/-- The smallest rfind'-free predecessor: `prec zero (comp left right)` recursing on the value returns
-the previous index, i.e. `n - 1`. It first pairs `⟨0, n⟩` (the shaper `pair zero (pair left right)`). -/
+/-- The smallest rfind'-free predecessor: `prec zero (comp left right)` recursing on the value
+returns the previous index, i.e. `n - 1`. It first pairs `⟨0, n⟩` (the shaper
+`pair zero (pair left right)`). -/
 def cPred : Code := comp (prec zero (comp left right)) (pair zero (pair left right))
 
 theorem val_precpred (m : ℕ) : val (prec zero (comp left right)) (Nat.pair 0 m) = m - 1 := by
@@ -106,15 +100,15 @@ theorem cpred_tc_ge (n : ℕ) : n ≤ tc cPred n := by
   have := tc_prec_ge zero (comp left right) 0 n
   omega
 
-/-- **The verdict.** The predecessor's native cost is NOT poly-bounded — route (a) (a predecessor-based
-peel) is value-linear, forcing the flag-cons pivot below. -/
+/-- **The verdict.** The predecessor's native cost is NOT poly-bounded — route (a) (a
+predecessor-based peel) is value-linear, forcing the flag-cons pivot below. -/
 theorem cPred_tc_not_polyBounded : ¬ PolyBounded (tc cPred) :=
   fun h => id_not_polyBounded (PolyBounded.mono cpred_tc_ge h)
 
 /-! ## The flag-cons list predicate and the instance layout -/
 
-/-- `IsList L m`: `L` is a **flag-cons** list of length `m` (`nil = 0`, `cons e r = pair 1 (pair e r)`).
-Structural — tracks length, which is all the count bound needs. -/
+/-- `IsList L m`: `L` is a **flag-cons** list of length `m` (`nil = 0`,
+`cons e r = pair 1 (pair e r)`). Structural — tracks length, which is all the count bound needs. -/
 inductive IsList : ℕ → ℕ → Prop
   | nil : IsList 0 0
   | cons (e r m : ℕ) : IsList r m → IsList (Nat.pair 1 (Nat.pair e r)) (m + 1)
@@ -132,7 +126,8 @@ def firstExample (inst : ℕ) : ℕ := ((readData inst).unpair.2).unpair.1
 def firstFV (inst : ℕ) : ℕ := (firstExample inst).unpair.2
 
 /-- **Well-formedness.** At least one example; `data` is a genuine length-`m` list; and the head
-example's feature vector is a genuine length-`k` list. Under `WF`, both counts are `≤ Nat.size inst`. -/
+example's feature vector is a genuine length-`k` list. Under `WF`, both counts are
+`≤ Nat.size inst`. -/
 def WF (inst : ℕ) : Prop :=
   0 < readM inst ∧ IsList (readData inst) (readM inst) ∧ IsList (firstFV inst) (readK inst)
 
@@ -232,8 +227,8 @@ def headL (L : ℕ) : ℕ := (L.unpair.2).unpair.1
 /-- `peel L i`: drop `i` list cells (`tailL` iterated `i` times). -/
 def peel (L i : ℕ) : ℕ := tailL^[i] L
 
-/-- The step `Code` for the peel loop: apply `tailL` to the accumulator. `tc = 7`, magnitude-INDEPENDENT
-(pure `unpair` — the whole point of the flag-cons pivot). -/
+/-- The step `Code` for the peel loop: apply `tailL` to the accumulator. `tc = 7`,
+magnitude-INDEPENDENT (pure `unpair` — the whole point of the flag-cons pivot). -/
 def cTailStep : Code := comp (comp right right) (comp right right)
 /-- The peel loop `Code`: `prec` with identity base and `cTailStep`. -/
 def cPeel : Code := prec (pair left right) cTailStep
@@ -258,12 +253,12 @@ theorem peel_le (L i : ℕ) : peel L i ≤ L := by
   | zero => simp
   | succ k ih => rw [Function.iterate_succ_apply']; exact le_trans (tailL_le _) ih
 
-/-- **The peel accessor is `PolyTime` given a poly-bit index.** For any `PolyTime` shaper `A` (initial
-list) and index `C` that is ALSO poly-bit as a VALUE (`hCval`), `n ↦ peel (A n) (C n)` is `PolyTime`.
-A direct `polyTime_loop` instance: `count = C` discharges `hCval`; the accumulator (a suffix) is
-`≤ A n` (`peel_le`), so `hacc` is `A`'s size clause; the step cost is the constant `7` (`tc_cTailStep`)
-— routed through `tc_prec_le'`. The `hCval` premise is the residual C2b must supply: the natural index
-`readM` is poly-bit only under `WF`. -/
+/-- **The peel accessor is `PolyTime` given a poly-bit index.** For any `PolyTime` shaper `A`
+(initial list) and index `C` that is ALSO poly-bit as a VALUE (`hCval`), `n ↦ peel (A n) (C n)` is
+`PolyTime`. A direct `polyTime_loop` instance: `count = C` discharges `hCval`; the accumulator (a
+suffix) is `≤ A n` (`peel_le`), so `hacc` is `A`'s size clause; the step cost is the constant `7`
+(`tc_cTailStep`) — routed through `tc_prec_le'`. The `hCval` premise is the residual C2b must
+supply: the natural index `readM` is poly-bit only under `WF`. -/
 theorem polyTime_peel {A C : ℕ → ℕ} (hA : PolyTime A) (hC : PolyTime C) (hCval : PolyBounded C) :
     PolyTime (fun n => peel (A n) (C n)) := by
   obtain ⟨ca, hca_rf, hca_val, hca_tc, hAsize⟩ := hA
@@ -292,24 +287,26 @@ theorem polyTime_headL : PolyTime headL := by
   unfold headL; exact polyTime_comp polyTime_left polyTime_right
 
 /-- **`getExample` is `PolyTime`** given a poly-bit index: `n ↦ headL (peel (A n) (C n))`. -/
-theorem polyTime_getExample {A C : ℕ → ℕ} (hA : PolyTime A) (hC : PolyTime C) (hCval : PolyBounded C) :
+theorem polyTime_get_example {A C : ℕ → ℕ} (hA : PolyTime A) (hC : PolyTime C)
+    (hCval : PolyBounded C) :
     PolyTime (fun n => headL (peel (A n) (C n))) :=
   polyTime_comp polyTime_headL (polyTime_peel hA hC hCval)
 
 /-- **`getLabel` is `PolyTime`** given a poly-bit index: the label is `(example).unpair.1`. -/
-theorem polyTime_getLabel {A C : ℕ → ℕ} (hA : PolyTime A) (hC : PolyTime C) (hCval : PolyBounded C) :
+theorem polyTime_get_label {A C : ℕ → ℕ} (hA : PolyTime A) (hC : PolyTime C) (hCval : PolyBounded C)
+    :
     PolyTime (fun n => (headL (peel (A n) (C n))).unpair.1) :=
-  polyTime_comp polyTime_left (polyTime_getExample hA hC hCval)
+  polyTime_comp polyTime_left (polyTime_get_example hA hC hCval)
 
-/-- **`getFeature` is `PolyTime`** given poly-bit indices `Ci` (example) and `Cj` (feature): peel the
-`i`-th example's feature vector `Cj n` times and read the head bit. A second `polyTime_peel`, with the
-inner shaper being `getExample`'s feature-vector projection (itself `PolyTime`). -/
-theorem polyTime_getFeature {A Ci Cj : ℕ → ℕ}
+/-- **`getFeature` is `PolyTime`** given poly-bit indices `Ci` (example) and `Cj` (feature): peel
+the `i`-th example's feature vector `Cj n` times and read the head bit. A second `polyTime_peel`,
+with the inner shaper being `getExample`'s feature-vector projection (itself `PolyTime`). -/
+theorem polyTime_get_feature {A Ci Cj : ℕ → ℕ}
     (hA : PolyTime A) (hCi : PolyTime Ci) (hCival : PolyBounded Ci)
     (hCj : PolyTime Cj) (hCjval : PolyBounded Cj) :
     PolyTime (fun n => headL (peel ((headL (peel (A n) (Ci n))).unpair.2) (Cj n))) :=
   polyTime_comp polyTime_headL
-    (polyTime_peel (polyTime_comp polyTime_right (polyTime_getExample hA hCi hCival)) hCj hCjval)
+    (polyTime_peel (polyTime_comp polyTime_right (polyTime_get_example hA hCi hCival)) hCj hCjval)
 
 /-! ## Correctness against a `List` model -/
 
@@ -348,16 +345,17 @@ theorem peel_encode (i : ℕ) : ∀ xs : List ℕ, peel (encodeList xs) i = enco
       | cons y ys => rw [tailL_encode_cons, ih ys, List.drop_succ_cons]
 
 /-- **`getExample` correctness.** Under the `List` model, `headL (peel (encodeList xs) i)` is the
-`i`-th element `xs[i]` (for `i < xs.length`). Label/feature access follow by `unpair`/a second peel. -/
-theorem getExample_encode (xs : List ℕ) (i : ℕ) (h : i < xs.length) :
+`i`-th element `xs[i]` (for `i < xs.length`). Label/feature access follow by `unpair`/a second
+peel. -/
+theorem get_example_encode (xs : List ℕ) (i : ℕ) (h : i < xs.length) :
     headL (peel (encodeList xs) i) = xs[i] := by
   rw [peel_encode, List.drop_eq_getElem_cons h, headL_encode_cons]
 
 /-- **`getLabel` correctness.** With each example encoded as `⟨label, fv⟩`, the `i`-th label is
 `(xs[i]).unpair.1`. -/
-theorem getLabel_encode (xs : List ℕ) (i : ℕ) (h : i < xs.length) :
+theorem get_label_encode (xs : List ℕ) (i : ℕ) (h : i < xs.length) :
     (headL (peel (encodeList xs) i)).unpair.1 = (xs[i]).unpair.1 := by
-  rw [getExample_encode xs i h]
+  rw [get_example_encode xs i h]
 
 /-! ## The labelled bit-example encoding
 
@@ -374,10 +372,10 @@ def fvOf (e : ℕ) : ℕ := e.unpair.2
 /-- Feature `j` of example `e`: peel its feature-vector `j` cells and read the head bit. -/
 def featOf (e j : ℕ) : ℕ := headL (peel (fvOf e) j)
 
-/-- **Binary well-formedness of the instance.** `WF` plus: every example's label and every feature bit
-is `≤ 1` (the binary regime), over the `List` model of the example data. -/
+/-- **Binary well-formedness of the instance.** `WF` plus: every example's label and every feature
+bit is `≤ 1` (the binary regime), over the `List` model of the example data. -/
 def WFBits (inst : ℕ) : Prop :=
   WF inst ∧ ∃ exs : List ℕ, readData inst = encodeList exs ∧ exs.length = readM inst ∧
     (∀ e ∈ exs, lblOf e ≤ 1) ∧ (∀ e ∈ exs, ∀ j, featOf e j ≤ 1)
 
-end OneDL
+end DecisionList

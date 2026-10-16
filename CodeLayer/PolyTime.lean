@@ -1,8 +1,3 @@
-/-
-Copyright (c) 2026 Mykola Palamarchuk. All rights reserved.
-Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Mykola Palamarchuk
--/
 module
 
 public import CodeLayer.Code.SizeArith
@@ -11,9 +6,6 @@ public import Mathlib.Analysis.SpecialFunctions.Pow.Asymptotics
 public import Mathlib.Data.Nat.Size
 public import Mathlib.Tactic.Positivity
 
--- Formal-check file, not Mathlib-destined: opt out of the house-style linters.
-set_option linter.style.header false
-set_option linter.style.longLine false
 
 /-!
 # A `PolyTime` predicate on the native cost `tc`, with the closure toolkit
@@ -25,17 +17,17 @@ Provenance: the native cost model. Builds on `CodeLayer/TimeCost.lean` (`evalT`,
 both consume for their well-formed-input bounds.
 
 ## HONEST FRAMING — unit cost, measured against input BIT-LENGTH
-`tc` is a UNIT-cost model: each AST primitive costs `1` regardless of operand magnitude. So "polynomial
-`tc`" here means **poly-many AST steps as a function of the INPUT BIT-LENGTH `Nat.size n`** — NOT
-bit-complexity (a single AST step may move an arbitrarily large `ℕ`). Every definition and lemma is
-stated in those terms; nothing here claims a bit-cost bound.
+`tc` is a UNIT-cost model: each AST primitive costs `1` regardless of operand magnitude. So
+"polynomial `tc`" here means **poly-many AST steps as a function of the INPUT BIT-LENGTH
+`Nat.size n`** — NOT bit-complexity (a single AST step may move an arbitrarily large `ℕ`). Every
+definition and lemma is stated in those terms; nothing here claims a bit-cost bound.
 
 ## The output-size clause is on `Nat.size ∘ f`, not `f`
-`PolyTime f` bundles a time bound AND an output-size bound; the output bound is on the **bit-length**
-`Nat.size (f n)`, poly in `Nat.size n`. This is forced: the task's alternative "`PolyBounded f`" (bound
-the VALUE `f n`) is false already for `succ` — `f n = n + 1` is exponential in `Nat.size n`. Bounding
-`Nat.size (f n)` is the honest, composable choice (and it is what a downstream `comp`/`prec` cost proof
-actually threads — see `polyTime_comp`, `polyTime_prec`).
+`PolyTime f` bundles a time bound AND an output-size bound; the output bound is on the
+**bit-length** `Nat.size (f n)`, poly in `Nat.size n`. This is forced: the alternative
+"`PolyBounded f`" (bound the VALUE `f n`) is false already for `succ` — `f n = n + 1` is exponential
+in `Nat.size n`. Bounding `Nat.size (f n)` is the honest, composable choice (and it is what a
+downstream `comp`/`prec` cost proof actually threads — see `polyTime_comp`, `polyTime_prec`).
 -/
 
 
@@ -69,8 +61,9 @@ theorem size_succ_le (n : ℕ) : Nat.size (n + 1) ≤ Nat.size n + 1 := by
 /-- A function is **poly-bounded** if it is `O((Nat.size n + 1)^k)` in the input bit-length. -/
 def PolyBounded (t : ℕ → ℕ) : Prop := ∃ C k : ℕ, ∀ n, t n ≤ C * (Nat.size n + 1) ^ k + C
 
-/-- Normal form: the additive `+ C` is absorbed into the multiplicative term (as `(size n+1)^k ≥ 1`),
-giving the cleaner `t n ≤ C·(size n+1)^k` shape that `add`/`mul`/`pow` compose through. -/
+/-- Normal form: the additive `+ C` is absorbed into the multiplicative term (as
+`(size n+1)^k ≥ 1`), giving the cleaner `t n ≤ C·(size n+1)^k` shape that `add`/`mul`/`pow` compose
+through. -/
 theorem PolyBounded.exists_mul {t : ℕ → ℕ} (h : PolyBounded t) :
     ∃ C k, ∀ n, t n ≤ C * (Nat.size n + 1) ^ k := by
   obtain ⟨C, k, hC⟩ := h
@@ -139,8 +132,8 @@ theorem PolyBounded.pow {t : ℕ → ℕ} (h : PolyBounded t) (j : ℕ) :
 
 /-- `f` is **poly-time** (native cost): some rfind'-free code computes it, its native step count is
 poly in the input bit-length, AND its output bit-length is poly in the input bit-length. The
-output-size clause is REQUIRED for `polyTime_comp`/`polyTime_prec` to close (the inner call's cost is
-poly in the inner output's bit-length). See the module note on why it is on `Nat.size ∘ f`. -/
+output-size clause is REQUIRED for `polyTime_comp`/`polyTime_prec` to close (the inner call's cost
+is poly in the inner output's bit-length). See the module note on why it is on `Nat.size ∘ f`. -/
 def PolyTime (f : ℕ → ℕ) : Prop :=
   ∃ c : Code, RfindFree c ∧ (∀ n, val c n = f n) ∧
     PolyBounded (tc c) ∧ PolyBounded (fun n => Nat.size (f n))
@@ -150,10 +143,12 @@ def PolyTime (f : ℕ → ℕ) : Prop :=
 `PolyBounded`/`PolyTime` state their bound over ALL of `ℕ`; a caller whose bound only holds on a
 well-formed domain (a raw slot of a packed input is exponential off it — see `PolyTime`'s own
 `unpair_snd_not_polyBounded` blocker below) needs the relativized notion instead. Consumed by
-`Learning/DecisionListSolver.lean` (`PurityWF`, `FindLitWF`, `SolveWF`) and `Learning/ConjunctionSolver.lean`
-(`ConjWF`), which import this file already for `PolyTime`/`PolyBounded`. -/
+`Learning/DecisionListSolver.lean` (`PurityWF`, `FindLitWF`, `SolveWF`) and
+`Learning/ConjunctionSolver.lean` (`ConjWF`), which import this file already for
+`PolyTime`/`PolyBounded`. -/
 
-/-- **Poly-time on a domain** — the honest "poly cost + output size on well-formed inputs" notion. -/
+/-- **Poly-time on a domain** — the honest "poly cost + output size on well-formed inputs"
+notion. -/
 def PolyBoundedOn (D : ℕ → Prop) (t : ℕ → ℕ) : Prop :=
   ∃ C k : ℕ, ∀ n, D n → t n ≤ C * (Nat.size n + 1) ^ k + C
 
@@ -211,8 +206,8 @@ theorem polyTime_comp {f g : ℕ → ℕ} (hf : PolyTime f) (hg : PolyTime g) :
   have hsg' : PolyBounded (fun n => Nat.size (val cg n)) :=
     PolyBounded.mono (fun n => (congrArg Nat.size (hvg n)).le) hsg
   refine ⟨comp cf cg, ⟨hcf, hcg⟩, fun n => by rw [val_comp, hvg, hvf]; rfl, ?_, ?_⟩
-  · -- native cost: `tc cg n + tc cf (val cg n) + 1`; the middle term is poly ONLY because `hsg'` bounds
-    -- the inner output bit-length that `cf`'s cost is measured against.
+  · -- native cost: `tc cg n + tc cf (val cg n) + 1`; the middle term is poly ONLY because `hsg'`
+    -- bounds the inner output bit-length that `cf`'s cost is measured against.
     obtain ⟨Cf, kf, hCf⟩ := htf.exists_mul
     have hmid : PolyBounded (fun n => tc cf (val cg n)) :=
       PolyBounded.mono (fun n => hCf (val cg n))
@@ -248,15 +243,17 @@ theorem tc_prec_le' {cf cg : Code} {a B : ℕ} :
 `PolyTime` provided the explicit premises hold:
 * `hbase` — the base code `cf`'s native cost is poly in its argument's bit-length;
 * `hiter` — the iteration count `m = N.unpair.2` is poly in the input bit-length `Nat.size N`
-  (a genuine restriction: `m` can be exponential in `Nat.size N` for an unconstrained packing, so the
-  caller's loop must arrange a poly step count — see the module notes);
+  (a genuine restriction: `m` can be exponential in `Nat.size N` for an unconstrained packing, so
+  the caller's loop must arrange a poly step count — see the module notes);
 * `Bstep`/`hBstep`/`hstep` — a per-step cost bound `Bstep N` (poly in `Nat.size N`) that holds
-  UNIFORMLY over the iterations `i < m` of input `N`; this is where the accumulator matters — the step
-  input threads `val (prec cf cg) (⟨a, i⟩)`, so `Bstep` can only be poly because that accumulator is;
+  UNIFORMLY over the iterations `i < m` of input `N`; this is where the accumulator matters — the
+  step input threads `val (prec cf cg) (⟨a, i⟩)`, so `Bstep` can only be poly because that
+  accumulator is;
 * `hacc` — the running accumulator stays poly-bounded in bit-length across all inputs (this IS the
   output-size clause of `PolyTime`).
 
-Total: `tc ≤ tc cf a + (Bstep N + 1)·m + 1`, poly by the `PolyBounded` algebra (via `tc_prec_le'`). -/
+Total: `tc ≤ tc cf a + (Bstep N + 1)·m + 1`, poly by the `PolyBounded` algebra (via
+`tc_prec_le'`). -/
 theorem polyTime_prec {cf cg : Code} (hcf : RfindFree cf) (hcg : RfindFree cg)
     (hbase : PolyBounded (tc cf))
     (hiter : PolyBounded (fun N => N.unpair.2))
@@ -327,8 +324,8 @@ theorem exists_two_pow_gt_poly (C k : ℕ) : ∃ j, C * (2 * j + 5) ^ k + C < 2 
   rw [Real.norm_of_nonneg hpos.le] at hj
   linarith
 
-/-- **The blocker.** A raw second-projection slot is NOT poly-bounded in the input bit-length, so the
-`hiter` premise of `polyTime_prec` cannot be discharged for a genuine loop. Witness family:
+/-- **The blocker.** A raw second-projection slot is NOT poly-bounded in the input bit-length, so
+the `hiter` premise of `polyTime_prec` cannot be discharged for a genuine loop. Witness family:
 `N = Nat.pair 0 (2^j)` has `Nat.size N + 1 ≤ 2j+5` (pairing is linear in the parts' bit-lengths,
 `size_pair_le`) yet `N.unpair.2 = 2^j`, and `2^j` outgrows every polynomial in `2j+5`
 (`exists_two_pow_gt_poly`). -/
@@ -351,13 +348,14 @@ theorem unpair_snd_not_polyBounded : ¬ PolyBounded (fun N => N.unpair.2) := by
 /-! ## Part 2 — the repair: `polyTime_loop`, the usable bounded-recursion closure
 
 The realistic pattern: the loop is `comp (prec cf cg) shaper`, where the shaper computes the packed
-input `⟨astart n, count n⟩` from the ACTUAL input `n`, and the iteration count `count n` is a genuine
-poly-bit VALUE function of `n` (premise `hCval : PolyBounded count`). This replaces the
-undischargeable `hiter` (Part 1): the number of iterations is `count n`, poly in `Nat.size n` because
-`hCval` bounds the VALUE `count n` — not a raw slot of the packed input. -/
+input `⟨astart n, count n⟩` from the ACTUAL input `n`, and the iteration count `count n` is a
+genuine poly-bit VALUE function of `n` (premise `hCval : PolyBounded count`). This replaces the
+undischargeable `hiter` (Part 1): the number of iterations is `count n`, poly in `Nat.size n`
+because `hCval` bounds the VALUE `count n` — not a raw slot of the packed input. -/
 
-/-- The identity `n ↦ n` is `PolyTime` (code `pair left right`, reconstructing `n` from its projections
-via `Nat.pair_unpair`; native cost a constant `3`). A convenient `astart`/`count` building block. -/
+/-- The identity `n ↦ n` is `PolyTime` (code `pair left right`, reconstructing `n` from its
+projections via `Nat.pair_unpair`; native cost a constant `3`). A convenient `astart`/`count`
+building block. -/
 theorem polyTime_id : PolyTime (fun n => n) :=
   ⟨pair left right, ⟨trivial, trivial⟩,
     fun n => by rw [val_pair, val_left, val_right, Nat.pair_unpair],
@@ -384,7 +382,8 @@ theorem tc_constCode_le (c n : ℕ) : tc (constCode c) n ≤ 2 * c + 1 := by
   | zero => simp [constCode]
   | succ d ih => simp only [constCode, tc_comp, tc_succ]; omega
 
-/-- Every constant function `n ↦ c` is `PolyTime` (native cost `2c+1`, output bit-length `size c`). -/
+/-- Every constant function `n ↦ c` is `PolyTime` (native cost `2c+1`, output bit-length
+`size c`). -/
 theorem polyTime_const (c : ℕ) : PolyTime (fun _ => c) :=
   ⟨constCode c, rfindFree_constCode c, fun n => val_constCode c n,
     PolyBounded.mono (fun n => tc_constCode_le c n) (PolyBounded.const (2 * c + 1)),
@@ -396,13 +395,13 @@ is `PolyTime` under premises a caller can actually discharge:
   poly-time shaper feeding `prec`);
 * `hCval` — the iteration COUNT `count n` is poly-bounded as a VALUE in `Nat.size n`. This is THE
   repair over `polyTime_prec`: the number of loop iterations is `count n`, so it is `hCval` (not the
-  size clause of `hC`, which only bounds `Nat.size (count n)`) that makes the loop's linear step-count
-  term poly. `hC`'s output clause does NOT suffice — `size (count n)` poly allows `count n` itself to
-  be exponential, i.e. exponentially many iterations;
+  size clause of `hC`, which only bounds `Nat.size (count n)`) that makes the loop's linear
+  step-count term poly. `hC`'s output clause does NOT suffice — `size (count n)` poly allows
+  `count n` itself to be exponential, i.e. exponentially many iterations;
 * `hbase` — the base code `cf`'s native cost is poly in its argument's bit-length;
-* `Bstep`/`hBstep`/`hstep` — a per-step cost bound `Bstep n` (poly in `Nat.size n`) holding UNIFORMLY
-  over the iterations `i < count n` (only the VISITED states, via `tc_prec_le'` — the step cost may be
-  unbounded over all of `ℕ`);
+* `Bstep`/`hBstep`/`hstep` — a per-step cost bound `Bstep n` (poly in `Nat.size n`) holding
+  UNIFORMLY over the iterations `i < count n` (only the VISITED states, via `tc_prec_le'` — the step
+  cost may be unbounded over all of `ℕ`);
 * `hacc` — the loop's output bit-length is poly (this IS the `PolyTime` output-size clause).
 
 Realized as `comp (prec cf cg) (pair ca cc)`; cost `tc (pair ca cc) n + tc cf (astart n) +
@@ -445,30 +444,35 @@ theorem polyTime_loop {cf cg : Code} (hcf : RfindFree cf) (hcg : RfindFree cg)
 /-! ## Part 3 — a worked example, fully discharged, exercising `polyTime_loop`
 
 `wloop := prec (pair left right) wcg`: a `3`-iteration loop that CARRIES its seed `a` unchanged
-(`wloop_const`), so `wloop ⟨n, 3⟩ = n`. Two features make it a genuine test rather than a triviality:
+(`wloop_const`), so `wloop ⟨n, 3⟩ = n`. Two features make it a genuine test rather than a
+triviality:
 * NON-CONSTANT STEP. The step `wcg` outputs the accumulator unchanged, but its native cost runs a
   nested inner loop over the iteration INDEX `i` (`comp (prec zero zero) …`), so `tc wcg` GROWS with
-  `i` (`wcg_tc_le`). Hence `tc wcg` is unbounded over all of `ℕ`; only `tc_prec_le'` (a bound over the
-  visited `i < count n`) applies — the uniform `tc_prec_le` does NOT. This is the point of the repair.
+  `i` (`wcg_tc_le`). Hence `tc wcg` is unbounded over all of `ℕ`; only `tc_prec_le'` (a bound over
+  the visited `i < count n`) applies — the uniform `tc_prec_le` does NOT. This is the point of the
+  repair.
 * POLY-BIT ACCUMULATOR OF LARGE VALUE. With `astart = id` the accumulator is the seed `n` itself,
   whose VALUE is exponential in `Nat.size n` yet whose bit-length is `Nat.size n` — so `hacc` is the
-  genuinely-scaling `PolyBounded Nat.size`, and the native cost never sees the accumulator magnitude.
+  genuinely-scaling `PolyBounded Nat.size`, and the native cost never sees the accumulator
+  magnitude.
 
-Note on the count. `count = fun _ => 3` is a CONSTANT: a prec-free-computable, poly-bit, scaling count
-does not exist (any prec-free code produces either a constant or an `n`-magnitude value), so a count
-that both scales with `n` and stays poly-bit — the honest C2 template `count = input length` — must
-itself be loop-computed. Here the count is constant while the accumulator scales; the two scaling
-dimensions cannot both be prec-free. -/
+Note on the count. `count = fun _ => 3` is a CONSTANT: a prec-free-computable, poly-bit, scaling
+count does not exist (any prec-free code produces either a constant or an `n`-magnitude value), so a
+count that both scales with `n` and stays poly-bit — the honest C2 template `count = input length` —
+must itself be loop-computed. Here the count is constant while the accumulator scales; the two
+scaling dimensions cannot both be prec-free. -/
 
-/-- Worked-example step code: outputs the accumulator (`comp left (pair (comp right right) …)`) while
-its cost runs a nested `i`-fold loop, making the per-step cost grow with the iteration index `i`. -/
+/-- Worked-example step code: outputs the accumulator (`comp left (pair (comp right right) …)`)
+while its cost runs a nested `i`-fold loop, making the per-step cost grow with the iteration index
+`i`. -/
 def wcg : Code :=
   comp left (pair (comp right right) (comp (prec zero zero) (pair zero (comp left right))))
 
 private theorem rfindFree_wcg : RfindFree wcg := by
   simp only [wcg, RfindFree, and_self]
 
-/-- `wcg` computes the accumulator slot `⟨_, ⟨_, acc⟩⟩ ↦ acc` (its value ignores the nested loop). -/
+/-- `wcg` computes the accumulator slot `⟨_, ⟨_, acc⟩⟩ ↦ acc` (its value ignores the nested
+loop). -/
 private theorem wcg_val (x : ℕ) : val wcg x = (x.unpair.2).unpair.2 := by
   simp only [wcg, val_comp, val_pair, val_left, val_right, Nat.unpair_pair]
 
@@ -489,10 +493,10 @@ theorem wloop_const (a m : ℕ) : val (prec (pair left right) wcg) (Nat.pair a m
   | zero => rw [val_prec_zero, val_pair, val_left, val_right, Nat.pair_unpair]
   | succ k ih => rw [val_prec_succ, wcg_val]; simpa only [Nat.unpair_pair] using ih
 
-/-- **Worked example.** The `3`-iteration loop above is `PolyTime` via `polyTime_loop`; every premise
-(`hA`, `hC`, `hCval`, `hbase`, `Bstep`/`hBstep`/`hstep`, `hacc`) is discharged concretely. The step
-uses `tc_prec_le'` essentially — `wcg_tc_le` grows with `i`, so no uniform `tc_prec_le` bound exists —
-and `hacc` is the scaling `PolyBounded Nat.size`. -/
+/-- **Worked example.** The `3`-iteration loop above is `PolyTime` via `polyTime_loop`; every
+premise (`hA`, `hC`, `hCval`, `hbase`, `Bstep`/`hBstep`/`hstep`, `hacc`) is discharged concretely.
+The step uses `tc_prec_le'` essentially — `wcg_tc_le` grows with `i`, so no uniform `tc_prec_le`
+bound exists — and `hacc` is the scaling `PolyBounded Nat.size`. -/
 theorem polyTime_loop_worked_example :
     PolyTime (fun n => val (prec (pair left right) wcg) (Nat.pair n 3)) := by
   have hcf : RfindFree (pair left right) := ⟨trivial, trivial⟩

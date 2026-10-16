@@ -1,20 +1,12 @@
-/-
-Copyright (c) 2026 Mykola Palamarchuk. All rights reserved.
-Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Mykola Palamarchuk
--/
 module
 
 public import AIT.CodingTheoremDecoder
 public import AIT.PrefixInvarianceKB
 
--- Formal-check file, not Mathlib-destined: opt out of the house-style header linter.
-set_option linter.style.header false
-
 /-!
-# `KB`'s Elias bound ([Discovery] §1.1)
+# `KB`'s Elias bound
 
-Provenance: [Discovery] §1.1's `KB` (FV-20) and its Elias-γ encoding overhead.
+The Elias-γ encoding overhead of `KB`.
 
 ## What this establishes
 
@@ -44,24 +36,24 @@ open Nat.Partrec Nat.Partrec.Code AdditiveComplexity
 
 /-! ## The Elias decoder, as a code -/
 
-private theorem primrec_eliasDecoderFn :
+private theorem primrec_eliasDecoder_fn :
     Primrec fun m : ℕ => (parseBits (natToBits m)).map Prod.snd :=
   Primrec.option_map (primrec_parseBits.comp primrec_natToBits) (Primrec.snd.comp Primrec.snd)
 
 /-- The Elias decoder's underlying partial function is partial recursive. -/
-theorem partrec_eliasDecoderFn :
+theorem partrec_eliasDecoder_fn :
     Nat.Partrec (fun m : ℕ => (((parseBits (natToBits m)).map Prod.snd : Option ℕ) : Part ℕ)) :=
-  Partrec.nat_iff.mp (Computable.ofOption primrec_eliasDecoderFn.to_comp)
+  Partrec.nat_iff.mp (Computable.ofOption primrec_eliasDecoder_fn.to_comp)
 
 /-- **The Elias decoder, as a code.** Parses an input's bit-string as `gammaCode k ++ bitsFixed k i`
 (`AIT/CodingTheoremDecoder.lean`'s `parseBits`) and outputs `i` directly. -/
 noncomputable def eliasDecoder : Code :=
-  Classical.choose (exists_code.mp partrec_eliasDecoderFn)
+  Classical.choose (exists_code.mp partrec_eliasDecoder_fn)
 
 theorem eliasDecoder_eval :
     eliasDecoder.eval =
       fun m : ℕ => (((parseBits (natToBits m)).map Prod.snd : Option ℕ) : Part ℕ) :=
-  Classical.choose_spec (exists_code.mp partrec_eliasDecoderFn)
+  Classical.choose_spec (exists_code.mp partrec_eliasDecoder_fn)
 
 /-- **`eliasDecoder`'s own halting domain, read as bit-strings, is prefix-free.** Its domain is
 contained in the parser's own domain (`eliasDecoder_eval`, `Option.map` preserving `isSome`), and

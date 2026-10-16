@@ -1,23 +1,14 @@
-/-
-Copyright (c) 2026 Mykola Palamarchuk. All rights reserved.
-Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Mykola Palamarchuk
--/
 module
 
 public import AIT.KolmogorovComplexity
 public import AIT.KolmogorovTimeBounded
 
--- Formal-check file, not Mathlib-destined: opt out of the house-style header linter.
-set_option linter.style.header false
-
 /-!
-# Bit-length Kolmogorov complexity: uncomputability (Slice 3)
+# Bit-length Kolmogorov complexity: uncomputability
 
-Provenance: [Discovery], §1.1 (`r = K(R)`, "program length in bits", and the invariance-constant
-caveat). Extends `AIT/KolmogorovComplexity.lean` (Slice 1: `codelen`, `Computes`, `K`, `K_le`,
-`K_unbounded`, `K_not_computable` via `fixed_point₂`) and `AIT/KolmogorovTimeBounded.lean` (Slice 2:
-`codelen' = Nat.size ∘ encode`, `K_bitlen`, `K_bitlen_eq`, `K_bitlen_unbounded`).
+Extends `AIT/KolmogorovComplexity.lean` (`codelen`, `Computes`, `K`, `K_le`,
+`K_unbounded`, `K_not_computable` via `fixed_point₂`) and `AIT/KolmogorovTimeBounded.lean`
+(`codelen' = Nat.size ∘ encode`, `K_bitlen`, `K_bitlen_eq`, `K_bitlen_unbounded`).
 
 Status: PROVED.
 
@@ -26,8 +17,10 @@ Status: PROVED.
   `Nat.size_le : size m ≤ n ↔ m < 2^n`, which makes `size m` the least `n` with `m < 2^n` — an
   `rfind`.
 * `K_bitlen_le`: any program computing `x` bounds its bit-length complexity by its own bit-length.
-* `K_bitlen_not_computable`: the paper's **bit-length** Kolmogorov complexity (`r` in bits) is
-  uncomputable — the same Kleene-`fixed_point₂` Berry argument as Slice-1's `K_not_computable`, now
+* `setOf_K_bitlen_le_finite`: only finitely many `x` have `K_bitlen x ≤ L`, from `setOf_K_le_finite`
+  through `K_bitlen_eq`.
+* `K_bitlen_not_computable`: the **bit-length** Kolmogorov complexity (`r` in bits) is
+  uncomputable — the same Kleene-`fixed_point₂` Berry argument as `K_not_computable`, now
   with the bit-length measure `codelen'` (computable since `Nat.size` is).
 
   Route note: a naive reduction from `K_not_computable` via `K_bitlen_eq : K_bitlen = Nat.size ∘ K`
@@ -40,16 +33,16 @@ Status: PROVED.
   alternative universal machines (the classical bound needs two, one simulating the other via a
   constant-size interpreter). And a "complexity relative to a computable re-encoding `f`"
   restatement gives no clean ADDITIVE constant, because `encodeCode` uses quadratic `Nat.pair` (same
-  pathology that blocked Berry in Slice 1, sidestepped there only by the recursion theorem):
+  pathology that blocked Berry for `K`, sidestepped there only by the recursion theorem):
   wrapping a code blows up `encode` super-linearly. A faithful version would need a second
   `Nat.Partrec` universal function plus a simulation theorem — a sub-project.
 * Does NOT reconnect `K`/`K_bitlen` to the abstract `r`/`K` reals of the other files (separate later
-  step). NOT the structure function (§2.3); NOT the SQ framework. `K_bitlen` is `Nat.size` of the
-  least-index `K` (Slice-2 `K_bitlen_eq`).
+  step). NOT the structure function. `K_bitlen` is `Nat.size` of the
+  least-index `K` (`K_bitlen_eq`).
 
-## Hypotheses: paper-stated vs added
-* Paper-stated / faithful: bit-length `K` is uncomputable.
-* Added / modeling: `Computable Nat.size` via `rfind`; the Berry argument reuses Slice-1's
+## Hypotheses: standard vs added
+* Standard: bit-length `K` is uncomputable.
+* Added / modeling: `Computable Nat.size` via `rfind`; the Berry argument reuses the
   `fixed_point₂` (recursion theorem), dodging the `encodeCode` quadratic-pairing blowup.
 -/
 
@@ -102,13 +95,20 @@ theorem computable_codelen' : Computable codelen' :=
 theorem K_bitlen_le {c : Code} {x : ℕ} (h : Computes c x) : K_bitlen x ≤ codelen' c :=
   Nat.sInf_le ⟨c, h, rfl⟩
 
+theorem setOf_K_bitlen_le_finite (L : ℕ) : {s | K_bitlen s ≤ L}.Finite := by
+  apply Set.Finite.subset (setOf_K_le_finite (2 ^ L))
+  intro s hs
+  simp only [Set.mem_ofPred_eq] at hs ⊢
+  rw [K_bitlen_eq, Nat.size_le] at hs
+  omega
+
 -- Mark `codelen'` irreducible for the Berry proof: otherwise `whnf` unfolds `codelen'` to
 -- `Nat.size (encode …)` and loops on `Nat.size`'s `binaryRec` during the `Computable` unification.
 -- (Established `computable_codelen'`/`K_bitlen_le` above first, where `codelen'` must reduce.)
 attribute [local irreducible] codelen'
 
-/-- **Uncomputability of bit-length Kolmogorov complexity** (the paper's `r` in bits). Mirrors
-Slice-1's `K_not_computable` with the bit-length measure `codelen'`, computable via
+/-- **Uncomputability of bit-length Kolmogorov complexity** (`r` in bits). Mirrors
+`K_not_computable` with the bit-length measure `codelen'`, computable via
 `computable_nat_size`. -/
 theorem K_bitlen_not_computable : ¬ Computable K_bitlen := by
   intro hK

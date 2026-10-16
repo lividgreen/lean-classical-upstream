@@ -1,19 +1,11 @@
-/-
-Copyright (c) 2026 Mykola Palamarchuk. All rights reserved.
-Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Mykola Palamarchuk
--/
 module
 
 public import AIT.AlgorithmicProbability
 
--- Formal-check file, not Mathlib-destined: opt out of the house-style header linter.
-set_option linter.style.header false
-
 /-!
-# Toward the coding theorem with a logarithmic loss ([Discovery] §1.1, FV-21)
+# Toward the coding theorem with a logarithmic loss
 
-Provenance: [Discovery] §1.1 and FV-21, over the universal prefix machine `PrefixMachine.KB` and
+Over the universal prefix machine `PrefixMachine.KB` and
 the algorithmic probability `PrefixMachine.QB`. Extends `AIT/AlgorithmicProbability.lean`.
 
 ## What this establishes

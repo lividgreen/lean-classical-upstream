@@ -1,28 +1,14 @@
-/-
-Copyright (c) 2026 Mykola Palamarchuk. All rights reserved.
-Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Mykola Palamarchuk
--/
 module
 
 public import AIT.EliasBound
-public import ChaitinIncompleteness.KBEnumerable
 public import AIT.PrefixComplexity
-
--- Formal-check file, not Mathlib-destined: opt out of the house-style header linter.
-set_option linter.style.header false
 
 /-!
 # Counting bounds on `KB` and `K_bitlen`, and `KB`'s non-computability
-([Decoupling] §6.6, [Discovery] §1.1)
-
-Provenance: [Decoupling] §6.6 (Theorem 6.6(iii), FV-28) and (Theorem 6.7(iii), FV-29) quantify their
-unprovable families as "all but finitely many `s`", over the finiteness lemmas
-`setOf_K_bitlen_le_finite` (`ChaitinIncompleteness/ChaitinIncompleteness.lean`) and
-`setOf_KB_le_finite` (`ChaitinIncompleteness/KBEnumerable.lean`) respectively — neither of which
-carries a count. [Discovery] §1.1's row FV-20 lists `KB`'s Kraft inequality (`kraft_KB`) beside
-every other property of the machine except its non-computability, unlike `K` (FV-2) and `KP`
-(FV-13).
+The finiteness lemmas `setOf_K_le_finite` (`AIT/KolmogorovComplexity.lean`) and
+`setOf_KB_le_finite` (`AIT/PrefixMachine.lean`) carry no count. This module supplies the counts,
+and the non-computability of `KB`, the one property of the machine that `kraft_KB` and the rest of
+`AIT/PrefixMachine.lean` leave out, unlike `K` and `KP`.
 
 ## What this establishes
 
@@ -39,7 +25,7 @@ Three independent results, none consuming another.
   `K_bitlen s ≤ L` is `K s < 2 ^ L` (`K_bitlen_eq`, `Nat.size_le`), and `K_injective` caps the
   values below `2 ^ L` at that many.
 * `KB_not_computable` — **`KB` is not computable**. The Berry argument runs through the
-  already-landed partial-map invariance `KB_partial_map_le` rather than through a Kleene fixed
+  already-proved partial-map invariance `KB_partial_map_le` rather than through a Kleene fixed
   point: no totality step is needed, unlike `KP_not_computable`'s route through `fixed_point₂` over
   `Code.eval`, an evaluation `pfy` does not share.
 
@@ -58,7 +44,7 @@ Three independent results, none consuming another.
 
 @[expose] public section
 
-namespace DeepLadder
+namespace PrefixCounting
 
 open PrefixMachine KolmogorovComplexity
 
@@ -72,7 +58,7 @@ theorem KB_unbounded (m : ℕ) : ∃ s, m < KB s := by
     by_contra hs; exact h ⟨s, not_le.mp hs⟩
   exact Set.infinite_univ ((setOf_KB_le_finite m).subset (fun s _ => hall s))
 
-end DeepLadder
+end PrefixCounting
 
 namespace PrefixMachine
 
@@ -137,9 +123,10 @@ theorem finset_card_K_bitlen_le (L : ℕ) (F : Finset ℕ) (hF : ∀ s ∈ F, K_
     _ = 2 ^ L := Finset.card_range _
 
 /-- **The counting bound on `K_bitlen`, `ncard` form**: `finset_card_K_bitlen_le`'s corollary at
-`setOf_K_bitlen_le_finite`, the same shape as `card_KB_le`. -/
+the finiteness of `{s | K_bitlen s ≤ L}` (`setOf_K_bitlen_le_finite`), the same shape as
+`card_KB_le`. -/
 theorem card_K_bitlen_le (L : ℕ) : {s : ℕ | K_bitlen s ≤ L}.ncard ≤ 2 ^ L := by
-  have hfin := setOf_K_bitlen_le_finite L
+  have hfin : {s : ℕ | K_bitlen s ≤ L}.Finite := setOf_K_bitlen_le_finite L
   rw [Set.ncard_eq_toFinset_card _ hfin]
   exact finset_card_K_bitlen_le L hfin.toFinset (fun s hs => hfin.mem_toFinset.mp hs)
 
@@ -172,7 +159,7 @@ theorem KB_not_computable : ¬ Computable KB := by
   obtain ⟨c, hc⟩ := KB_partial_map_le _ hf
   obtain ⟨c', hc'⟩ := KB_le_two_mul_size
   set n : ℕ := 2 ^ (c + c' + 4) with hndef
-  obtain ⟨w, hw⟩ := DeepLadder.KB_unbounded n
+  obtain ⟨w, hw⟩ := PrefixCounting.KB_unbounded n
   have hdom : (Nat.rfind (p n)).Dom := by
     rw [Nat.rfind_dom]
     exact ⟨w, by simp [hp, hw], fun {m} _ => trivial⟩

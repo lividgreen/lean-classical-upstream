@@ -1,19 +1,11 @@
-/-
-Copyright (c) 2026 Mykola Palamarchuk. All rights reserved.
-Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Mykola Palamarchuk
--/
 module
 
 public import AIT.PrefixInvarianceKB
 
--- Formal-check file, not Mathlib-destined: opt out of the house-style header linter.
-set_option linter.style.header false
-
 /-!
 # `KB`'s subadditivity on pairs
 
-Provenance: the pairing half of [Discovery] §1.1's universal-machine description, over the prefix
+The pairing half of the universal-machine description, over the prefix
 complexity `KB` of `AIT/PrefixMachine.lean` and the universal prefix machine `univPrefix` of
 `AIT/PrefixInvarianceKB.lean`.
 
@@ -44,39 +36,39 @@ open Nat.Partrec Nat.Partrec.Code AdditiveComplexity CodeEvalLaws
 
 /-! ## The split-point search, primitive-recursively -/
 
-private theorem primrec_splitK : Primrec fun p : ℕ × ℕ => (Nat.unpair p.2).1 :=
+private theorem primrec_split_k : Primrec fun p : ℕ × ℕ => (Nat.unpair p.2).1 :=
   (Primrec.fst.comp Primrec.unpair).comp Primrec.snd
 
-private theorem primrec_splitS : Primrec fun p : ℕ × ℕ => (Nat.unpair p.2).2 :=
+private theorem primrec_split_s : Primrec fun p : ℕ × ℕ => (Nat.unpair p.2).2 :=
   (Primrec.snd.comp Primrec.unpair).comp Primrec.snd
 
-private theorem primrec_splitW : Primrec fun p : ℕ × ℕ => natToBits p.1 :=
+private theorem primrec_split_w : Primrec fun p : ℕ × ℕ => natToBits p.1 :=
   primrec_natToBits.comp Primrec.fst
 
-private theorem primrec_splitTake : Primrec fun p : ℕ × ℕ =>
+private theorem primrec_split_take : Primrec fun p : ℕ × ℕ =>
     (natToBits p.1).take (Nat.unpair p.2).1 :=
-  Primrec.comp Primrec.list_take (primrec_splitK.pair primrec_splitW)
+  Primrec.comp Primrec.list_take (primrec_split_k.pair primrec_split_w)
 
-private theorem primrec_splitDrop : Primrec fun p : ℕ × ℕ =>
+private theorem primrec_split_drop : Primrec fun p : ℕ × ℕ =>
     (natToBits p.1).drop (Nat.unpair p.2).1 :=
-  Primrec.comp Primrec.list_drop (primrec_splitK.pair primrec_splitW)
+  Primrec.comp Primrec.list_drop (primrec_split_k.pair primrec_split_w)
 
-private theorem primrec_splitArgA : Primrec fun p : ℕ × ℕ =>
+private theorem primrec_split_arg_a : Primrec fun p : ℕ × ℕ =>
     bitsToNat ((natToBits p.1).take (Nat.unpair p.2).1) :=
-  primrec_bitsToNat.comp primrec_splitTake
+  primrec_bitsToNat.comp primrec_split_take
 
-private theorem primrec_splitArgB : Primrec fun p : ℕ × ℕ =>
+private theorem primrec_split_arg_b : Primrec fun p : ℕ × ℕ =>
     bitsToNat ((natToBits p.1).drop (Nat.unpair p.2).1) :=
-  primrec_bitsToNat.comp primrec_splitDrop
+  primrec_bitsToNat.comp primrec_split_drop
 
 /-- **The split-point search predicate**, primitive-recursively: writing `n = Nat.pair k s`, does
 `univPrefix` halt by stage `s` on the first `k` bits of `m`'s bit-string. -/
-private theorem primrec₂_splitCond : Primrec₂ fun (m n : ℕ) =>
+private theorem primrec₂_split_cond : Primrec₂ fun (m n : ℕ) =>
     (evaln (Nat.unpair n).2 univPrefix
       (bitsToNat ((natToBits m).take (Nat.unpair n).1))).isSome := by
   have hq : Primrec fun p : ℕ × ℕ => (((Nat.unpair p.2).2, univPrefix),
       bitsToNat ((natToBits p.1).take (Nat.unpair p.2).1)) :=
-    (primrec_splitS.pair (Primrec.const univPrefix)).pair primrec_splitArgA
+    (primrec_split_s.pair (Primrec.const univPrefix)).pair primrec_split_arg_a
   have hev : Primrec fun p : ℕ × ℕ =>
       evaln (Nat.unpair p.2).2 univPrefix
         (bitsToNat ((natToBits p.1).take (Nat.unpair p.2).1)) :=
@@ -88,7 +80,7 @@ private theorem primrec₂_splitCond : Primrec₂ fun (m n : ℕ) =>
 open scoped Classical in
 /-- Once the state has bottomed out, `Nat.rfind` over the split predicate reproduces `Nat.find` —
 the same reduction `BitStringPrimrec.rfind_acceptedList_eq` makes for `pfy`'s own search. -/
-private theorem rfind_splitCond_eq (m : ℕ) :
+private theorem rfind_split_cond_eq (m : ℕ) :
     Nat.rfind (fun n : ℕ => Part.some
         ((evaln (Nat.unpair n).2 univPrefix
           (bitsToNat ((natToBits m).take (Nat.unpair n).1))).isSome)) =
@@ -110,7 +102,7 @@ private theorem rfind_splitCond_eq (m : ℕ) :
 
 /-! ## The machine, as a code -/
 
-theorem partrec_pairMachineFn :
+theorem partrec_pairMachine_fn :
     Nat.Partrec (fun m : ℕ =>
       (Nat.rfind fun n : ℕ => Part.some
           ((evaln (Nat.unpair n).2 univPrefix
@@ -123,13 +115,13 @@ theorem partrec_pairMachineFn :
   have hArfind : Partrec fun m : ℕ => Nat.rfind fun n : ℕ => Part.some
       ((evaln (Nat.unpair n).2 univPrefix
         (bitsToNat ((natToBits m).take (Nat.unpair n).1))).isSome) :=
-    Partrec.rfind primrec₂_splitCond.to_comp.partrec₂
+    Partrec.rfind primrec₂_split_cond.to_comp.partrec₂
   have hEvalA_raw : Partrec fun mn : ℕ × ℕ =>
       univPrefix.eval (bitsToNat ((natToBits mn.1).take (Nat.unpair mn.2).1)) :=
-    Nat.Partrec.Code.eval_part.comp (Computable.const univPrefix) primrec_splitArgA.to_comp
+    Nat.Partrec.Code.eval_part.comp (Computable.const univPrefix) primrec_split_arg_a.to_comp
   have hEvalB_raw : Partrec fun mn : ℕ × ℕ =>
       univPrefix.eval (bitsToNat ((natToBits mn.1).drop (Nat.unpair mn.2).1)) :=
-    Nat.Partrec.Code.eval_part.comp (Computable.const univPrefix) primrec_splitArgB.to_comp
+    Nat.Partrec.Code.eval_part.comp (Computable.const univPrefix) primrec_split_arg_b.to_comp
   have hx2 : Primrec₂ fun (a : (ℕ × ℕ) × ℕ) (_ : ℕ) => a.2 :=
     Primrec.comp₂ Primrec.snd Primrec₂.left
   have hpairxy : Primrec₂ fun (a : (ℕ × ℕ) × ℕ) (y : ℕ) => Nat.pair a.2 y :=
@@ -149,7 +141,7 @@ theorem partrec_pairMachineFn :
 it splits into a description for one value followed by a description for another, each read
 through `univPrefix`. -/
 noncomputable def pairMachine : Code :=
-  Classical.choose (exists_code.mp partrec_pairMachineFn)
+  Classical.choose (exists_code.mp partrec_pairMachine_fn)
 
 theorem pairMachine_eval : pairMachine.eval =
     fun m : ℕ =>
@@ -161,7 +153,7 @@ theorem pairMachine_eval : pairMachine.eval =
             fun x : ℕ =>
               (univPrefix.eval (bitsToNat ((natToBits m).drop (Nat.unpair n).1))).bind
                 fun y : ℕ => Part.some (Nat.pair x y) :=
-  Classical.choose_spec (exists_code.mp partrec_pairMachineFn)
+  Classical.choose_spec (exists_code.mp partrec_pairMachine_fn)
 
 /-! ## The machine's own halting domain, read as bit-strings, is prefix-free -/
 
@@ -290,7 +282,7 @@ theorem KB_pair_le : ∃ c, ∀ x y, KB (Nat.pair x y) ≤ KB x + KB y + c := by
     omega
   -- Both halves now resolve exactly as intended.
   have hfinal : pairMachine.eval (bitsToNat w) = Part.some (Nat.pair x y) := by
-    rw [congrFun pairMachine_eval (bitsToNat w), rfind_splitCond_eq, dite_eq_left hex, ← hndef,
+    rw [congrFun pairMachine_eval (bitsToNat w), rfind_split_cond_eq, dite_eq_left hex, ← hndef,
       Part.bind_some, natToBits_bitsToNat, hklen, htakek, hux, Part.bind_some, hdropk, huy,
       Part.bind_some]
   have hpf : PrefixFree (natToBits '' pairMachine.eval.Dom) := prefixFree_pairMachine_dom

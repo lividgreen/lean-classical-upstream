@@ -1,44 +1,36 @@
-/-
-Copyright (c) 2026 Mykola Palamarchuk. All rights reserved.
-Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Mykola Palamarchuk
--/
 module
 
 public import Mathlib.Data.List.GetD
 public import Mathlib.Data.Nat.Log
 public import CodeLayer.PrefixInvariance
 
--- Formal-check file, not Mathlib-destined: opt out of the house-style linters.
-set_option linter.style.header false
-set_option linter.style.longLine false
 
 /-!
-# Kolmogorov structure function — the 45° / geometric lower bound ([Discovery] §2.3, FV-14)
+# Kolmogorov structure function — the 45° / geometric lower bound
 
-Provenance: [Discovery] §2.3 (the structure-function backdrop of Theorem 2.1)
-and Vereshchagin–Vitányi (2004) / Shen–Uspensky–Vereshchagin. This file makes §2.3's load-bearing
-inequality genuine on the **additive carrier** (`AdditiveComplexity.KE`, `CodeLayer/AdditiveComplexity.lean`).
-Extends `CodeLayer/BinaryConstant.lean` (`bconst`, `eval_bconst`, `elen_bconst_le`, `dbl`) and reuses
-`CodeLayer/PrefixInvariance.lean`'s `computes_comp` (the compose eval law).
+After Vereshchagin–Vitányi (2004) / Shen–Uspensky–Vereshchagin. This file proves the 45° inequality
+on the **additive carrier** (`AdditiveComplexity.KE`, `CodeLayer/AdditiveComplexity.lean`).
+Extends `CodeLayer/BinaryConstant.lean` (`bconst`, `eval_bconst`, `elen_bconst_le`, `dbl`) and
+reuses `CodeLayer/PrefixInvariance.lean`'s `computes_comp` (the compose eval law).
 
 ## The slice proved (the graph "cannot drop faster than 45°")
 For a string `x`, the structure function `h_x(α) = min { log|S| : x ∈ S, K(S) ≤ α }` over finite
-models `S ∋ x`. Every model on the graph yields a two-part description of `x` as `(model, index-in-S)`,
-so `KE x ≤ α + c₁·h_x(α) + c₂` with explicit constants (`KE_le_structFn` / `structFn_ge`). The FULL
-sufficient-statistic identity (`K(x) = α + h_x(α) + O(1)` at the minimal sufficient statistic) is OUT
-of scope — it needs conditional complexity `KE(·|·)` + Symmetry of Information, which no prover has
-(cf. Lee–Romashchenko); a registered follow-on.
+models `S ∋ x`. Every model on the graph yields a two-part description of `x` as
+`(model, index-in-S)`, so `KE x ≤ α + c₁·h_x(α) + c₂` with explicit constants (`KE_le_structFn` /
+`structFn_ge`). The FULL sufficient-statistic identity (`K(x) = α + h_x(α) + O(1)` at the minimal
+sufficient statistic) is OUT of scope — it needs conditional complexity `KE(·|·)` and the symmetry
+of information on this carrier, neither of which is developed here.
 
 ## Model encoding (fidelity-sensitive; defended)
 A **model containing `x`** is a `Code c` with `c.eval 0 = some (Encodable.encode L)` for a list
 `L : List ℕ` that is `Nodup` and contains `x`. Choices:
 * **`List ℕ`, not `Finset ℕ`.** Building the universality-extracted extractor needs `Primcodable`
-  and the list-computability API (`Primrec.list_getD`, `decode`, `encode`), all present for `List ℕ`;
-  `Primcodable (Finset ℕ)` computability is not readily available. Requiring **`L.Nodup`** makes
-  `L.length` the genuine cardinality of the underlying set, so "cardinality is of the decoded object".
-* **log-cardinality `= Nat.log 2 L.length`** (`⌊log₂|S|⌋`). The `⌊⌋`-vs-`⌈⌉`/real-`log` gap is `O(1)`,
-  absorbed into `c₂` (the index needs `Nat.size i ≤ Nat.log 2 L.length + 1` bits).
+  and the list-computability API (`Primrec.list_getD`, `decode`, `encode`), all present for
+  `List ℕ`; `Primcodable (Finset ℕ)` computability is not readily available. Requiring **`L.Nodup`**
+  makes `L.length` the genuine cardinality of the underlying set, so "cardinality is of the decoded
+  object".
+* **log-cardinality `= Nat.log 2 L.length`** (`⌊log₂|S|⌋`). The `⌊⌋`-vs-`⌈⌉`/real-`log` gap is
+  `O(1)`, absorbed into `c₂` (the index needs `Nat.size i ≤ Nat.log 2 L.length + 1` bits).
 * **Extraction** is the `nth ∘ (c, bconst i)`-shaped assembly `comp extractor (pair c (bconst i))`
   with `i = L.idxOf x`, all composition additive by `KE_comp_le`. `extractor` (list-index) and
   `mkSingleton` (`n ↦ encode [n]`) are fixed codes extracted from universality (like `dbl`); their
@@ -54,13 +46,12 @@ singleton `{x}` gives nonemptiness for `α ≥ KE x + c₀`.
 * `c₀ = 3 + elen mkSingleton` — cost of wrapping the `x`-program into a singleton-list emitter.
 * `c₁ = 15 + elen dbl` (`= κ`) — the per-bit cost of the binary index constant `bconst`; NOT `1`.
 * `c₂ = 36 + elen extractor + 2·elen dbl` — extractor + two `pair`/`comp` opcodes + the `bconst`
-  additive slack. The paper's `O(log)` slack absorbs any fixed `c₁`, `c₂`.
+  additive slack. The classical `O(log)` slack absorbs any fixed `c₁`, `c₂`.
 
 ## Boundaries
-* Full V&V identity / minimal sufficient statistic — needs conditional `KE(·|·)` + Symmetry of
-  Information (no prover has either); a contribution-grade follow-on.
-* Evaln-budgeted version — the `evaln`-budget wall applies identically (eval-level only, like `prop_2_2_eval`).
-* [Discovery] §2.3's use stays backdrop; this module makes its load-bearing inequality genuine.
+* Full V&V identity / minimal sufficient statistic — needs conditional `KE(·|·)` and the symmetry
+  of information on this carrier; neither is developed here.
+* Evaln-budgeted version — the `evaln`-budget wall applies identically (eval-level only).
 -/
 
 
@@ -83,7 +74,8 @@ theorem primrec_extractFn : Primrec extractFn := by
   have h2 : Primrec (fun p : ℕ => (Nat.unpair p).2) := Primrec.snd.comp Primrec.unpair
   have h3 : Primrec (fun p : ℕ => (Encodable.decode (Nat.unpair p).1 : Option (List ℕ))) :=
     Primrec.decode.comp h1
-  have h4 : Primrec (fun p : ℕ => ((Encodable.decode (Nat.unpair p).1 : Option (List ℕ)).getD [])) :=
+  have h4 : Primrec (fun p : ℕ => ((Encodable.decode (Nat.unpair p).1 : Option (List ℕ)).getD
+      [])) :=
     Primrec.option_getD.comp h3 (Primrec.const [])
   exact (Primrec.list_getD 0).comp h4 h2
 
@@ -141,16 +133,18 @@ theorem modelLogCards_subset {x α α' : ℕ} (h : α ≤ α') :
 
 /-- **Two-part description (per model).** A model code `c` outputting `encode L` (`L ∋ x`) yields a
 description of `x` as `(model, index)`: `KE x ≤ elen c + c₁·log₂|L| + c₂` with `c₁ = 15 + elen dbl`,
-`c₂ = 36 + elen extractor + 2·elen dbl`. Assembly `comp extractor (pair c (bconst i))`, `i = L.idxOf x`:
-`pair` feeds `(encode L, i)` to the list-index `extractor`; `bconst i` costs `O(Nat.size i) = O(log₂|L|)`;
-everything additive by `E_len_comp`/`E_len_pair` + `KE_le`. -/
+`c₂ = 36 + elen extractor + 2·elen dbl`. Assembly `comp extractor (pair c (bconst i))`,
+`i = L.idxOf x`: `pair` feeds `(encode L, i)` to the list-index `extractor`; `bconst i` costs
+`O(Nat.size i) = O(log₂|L|)`; everything additive by `E_len_comp`/`E_len_pair` + `KE_le`. -/
 theorem KE_le_of_model {x : ℕ} {c : Code} {L : List ℕ}
     (hceval : c.eval 0 = Part.some (Encodable.encode L)) (hx : x ∈ L) :
-    KE x ≤ elen c + (15 + elen dbl) * Nat.log 2 L.length + (36 + elen extractor + 2 * elen dbl) := by
+    KE x ≤ elen c + (15 + elen dbl) * Nat.log 2 L.length + (36 + elen extractor + 2 * elen dbl) :=
+        by
   have hilt : L.idxOf x < L.length := List.idxOf_lt_length_of_mem hx
   have hgetD : L.getD (L.idxOf x) 0 = x := by
     rw [List.getD_eq_getElem _ _ hilt]; exact List.getElem_idxOf hilt
-  have h_inner : Computes (pair c (bconst (L.idxOf x))) (Nat.pair (Encodable.encode L) (L.idxOf x)) := by
+  have h_inner : Computes (pair c (bconst (L.idxOf x)))
+      (Nat.pair (Encodable.encode L) (L.idxOf x)) := by
     rw [Computes]
     change Nat.pair <$> eval c 0 <*> eval (bconst (L.idxOf x)) 0 = _
     rw [hceval, eval_bconst]; simp [Seq.seq]
@@ -192,8 +186,8 @@ theorem structFn_antitone (x : ℕ) {α α' : ℕ} (h : α ≤ α') : structFn x
   · rw [ite_eq_right hm]; exact le_top
 
 /-- **(b) Singleton collapse.** For `α ≥ KE x + (3 + elen mkSingleton)` the singleton model `{x}` is
-available, so `structFn x α = 0`. Witness `comp mkSingleton cx` (`cx` the `KE`-optimal code for `x`),
-outputting `encode [x]`; `log₂ |[x]| = log₂ 1 = 0`. -/
+available, so `structFn x α = 0`. Witness `comp mkSingleton cx` (`cx` the `KE`-optimal code for
+`x`), outputting `encode [x]`; `log₂ |[x]| = log₂ 1 = 0`. -/
 theorem structFn_singleton (x : ℕ) {α : ℕ} (h : KE x + (3 + elen mkSingleton) ≤ α) :
     structFn x α = 0 := by
   obtain ⟨cx, hcx, hlx⟩ := exists_min_E x
@@ -231,8 +225,8 @@ theorem KE_le_structFn (x α : ℕ) :
     rw [ENat.mul_top hc1]; simp
 
 /-- **(d) The equivalent lower-bound form.** `(KE x − α − c₂)/c₁ ≤ structFn x α` (ℕ-subtraction /
-`Nat.log`-division safe): the structure function is bounded below by the two-part-description deficit
-divided by the slope. Rearrangement of `KE_le_structFn`. -/
+`Nat.log`-division safe): the structure function is bounded below by the two-part-description
+deficit divided by the slope. Rearrangement of `KE_le_structFn`. -/
 theorem structFn_ge (x α : ℕ) :
     (((KE x - α - (36 + elen extractor + 2 * elen dbl)) / (15 + elen dbl) : ℕ) : ℕ∞)
       ≤ structFn x α := by

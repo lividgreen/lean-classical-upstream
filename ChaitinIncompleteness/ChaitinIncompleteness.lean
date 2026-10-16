@@ -1,21 +1,13 @@
-/-
-Copyright (c) 2026 Mykola Palamarchuk. All rights reserved.
-Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Mykola Palamarchuk
--/
 module
 
 public import AIT.KolmogorovBitlen
 public import Foundation.FirstOrder.Incompleteness.Halting
 
--- Formal-check file, not Mathlib-destined: opt out of the house-style header linter.
-set_option linter.style.header false
-
 /-!
-# Chaitin's incompleteness theorem over bit-length complexity ([Decoupling] §6.6, [Discovery] §1.1)
+# Chaitin's incompleteness theorem over bit-length complexity
 
-Provenance: [Decoupling] §6.6 (Theorem 6.6, FV-28), over the bit-length complexity `K_bitlen` of
-[Discovery] §1.1 (`AIT/KolmogorovBitlen.lean`) and the `FormalizedFormalLogic/Foundation` arithmetic
+Chaitin's theorem (Chaitin 1974), over the bit-length complexity `K_bitlen`
+(`AIT/KolmogorovBitlen.lean`) and the `FormalizedFormalLogic/Foundation` arithmetic
 — its representation of computably enumerable predicates (`codeOfREPred`), its Σ₁-completeness over
 `𝗥₀`, and the Σ₁ provability predicate of a `Δ₁`-axiomatized theory.
 
@@ -51,7 +43,7 @@ namespace KolmogorovComplexity
 
 open Nat.Partrec Nat.Partrec.Code
 
-/-! ## Piece 1: the abstract Chaitin bound (Mathlib only) -/
+/-! ## The abstract Chaitin bound (Mathlib only) -/
 
 /-- The three `Nat.unpair` projections packing `(s, n, k)` into one natural, used by the Berry
 search below: `m = Nat.pair s (Nat.pair n k)`. -/
@@ -179,7 +171,7 @@ theorem chaitin_bound {P : ℕ × ℕ → Prop} (hP : REPred P)
   have hle' : K_bitlen (sOf w) ≤ codelen' c₀ := K_bitlen_le hcomp
   omega
 
-/-! ## Piece 2: the arithmetic form (Foundation) -/
+/-! ## The arithmetic form (Foundation) -/
 
 open FFL.FirstOrder FFL.FirstOrder.Arithmetic
 
@@ -323,14 +315,7 @@ theorem chaitin_true_unprovable :
   refine ⟨c₀, fun s hs => ⟨(models_chaitinSentence_iff s (codelen' c₀)).mpr hs, fun h => ?_⟩⟩
   exact absurd (hc₀ s (codelen' c₀) h) (_root_.lt_irrefl _)
 
-theorem setOf_K_bitlen_le_finite (L : ℕ) : {s | K_bitlen s ≤ L}.Finite := by
-  apply Set.Finite.subset (setOf_K_le_finite (2 ^ L))
-  intro s hs
-  simp only [Set.mem_ofPred_eq] at hs ⊢
-  rw [K_bitlen_eq, Nat.size_le] at hs
-  omega
-
-/-! ## Piece 3: transport to recursively enumerable theories, via Craig's trick
+/-! ## Transport to recursively enumerable theories, via Craig's trick
 
 `T.craig` (`FormalizedFormalLogic/Foundation`) is a `Δ₁`-axiomatized theory deductively
 equivalent to any `RE`-axiomatized `T`, so the `Δ₁` forms above transport along that equivalence

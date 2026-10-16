@@ -1,8 +1,3 @@
-/-
-Copyright (c) 2026 Mykola Palamarchuk. All rights reserved.
-Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Mykola Palamarchuk
--/
 module
 
 public import AIT.CodingTheorem
@@ -10,15 +5,12 @@ public import AIT.KolmogorovTimeBounded
 public import AIT.KolmogorovBitlen
 public import Mathlib.Analysis.PSeries
 
--- Formal-check file, not Mathlib-destined: opt out of the house-style header linter.
-set_option linter.style.header false
-
 /-!
-# Prefix-complexity minimality, and the plain bit-length's additive form ([Discovery] §1.1, FV-25)
+# Prefix-complexity minimality, and the plain bit-length's additive form
 
-Provenance: [Discovery] §1.1, rows FV-25 (the coding theorem this instantiates), FV-28 (the bound
-the witness below re-derives) and FV-29/FV-33 (the two additive forms between `KB` and `K_bitlen`,
-both open in either direction).
+This instantiates the coding theorem, re-derives the Elias bound
+`PrefixMachine.KB_le_two_mul_size`, and treats the two additive forms between `KB` and `K_bitlen`,
+both open in either direction.
 
 ## What this establishes
 
@@ -29,20 +21,20 @@ both open in either direction).
 * `KB_le_add_of_upperSemicomputable_summable`, its `_nonvacuous` witness,
   `summable_of_KB_le_add` and `KB_le_add_iff_summable`: **prefix complexity is, up to an additive
   constant, the least upper-semicomputable function with a summable Kraft weight** — the
-  minimality reading of Levin's coding theorem (FV-25).
+  minimality reading of Levin's coding theorem.
 * `upperSemicomputable_K_bitlen`: the plain bit-length `K_bitlen` is upper-semicomputable, by a
   staged least-index search with the constant code as sentinel.
 * `KB_le_K_bitlen_add_iff_summable`: the first additive form between `KB` and `K_bitlen`
-  (FV-29's residue) is exactly the summability of `∑ 2⁻ᴷᵇⁱᵗˡᵉⁿ` — **not decided here in either
+  is exactly the summability of `∑ 2⁻ᴷᵇⁱᵗˡᵉⁿ` — **not decided here in either
   direction**.
-* `KB_le_two_mul_size'`: a second proof of FV-28's Elias bound `KB n ≤ 2 · size n + c`, through the
+* `KB_le_two_mul_size'`: a second proof of the Elias bound `KB n ≤ 2 · size n + c`, through the
   coding theorem in place of the Elias decoder — no comparison of the two constants is claimed.
 
 ## What this does NOT establish (flagged)
 
 Whether `∑ x, 2⁻ᴷᵇⁱᵗˡᵉⁿ⁽ˣ⁾` converges, in either direction, is untouched; so is the second additive
-form `K_bitlen ≤ KB + c` (FV-33's own residue). Nothing here compares `KB_le_two_mul_size'`'s
-constant against FV-28's `PrefixMachine.KB_le_two_mul_size`.
+form `K_bitlen ≤ KB + c`. Nothing here compares `KB_le_two_mul_size'`'s constant against that of
+`PrefixMachine.KB_le_two_mul_size`.
 -/
 
 
@@ -415,9 +407,9 @@ theorem KB_le_K_bitlen_add_iff_summable :
     (∃ c : ℕ, ∀ x, KB x ≤ K_bitlen x + c) ↔ Summable fun x : ℕ => (1 / 2 : ℝ) ^ K_bitlen x :=
   KB_le_add_iff_summable upperSemicomputable_K_bitlen
 
-/-! ## A second route to FV-28's Elias bound -/
+/-! ## A second route to the Elias bound -/
 
-/-- **A second proof of `PrefixMachine.KB_le_two_mul_size`** (FV-28), through the coding theorem's
+/-- **A second proof of `PrefixMachine.KB_le_two_mul_size`**, through the coding theorem's
 minimality in place of the Elias decoder — no comparison of the two constants is claimed. -/
 theorem KB_le_two_mul_size' : ∃ c : ℕ, ∀ n, KB n ≤ 2 * Nat.size n + c :=
   KB_le_add_of_upperSemicomputable_summable

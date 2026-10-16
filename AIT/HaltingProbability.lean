@@ -1,27 +1,16 @@
-/-
-Copyright (c) 2026 Mykola Palamarchuk. All rights reserved.
-Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Mykola Palamarchuk
--/
 module
 
 public import AIT.CodingTheoremBitwise
 import all AIT.CodingTheoremBitwise
 public import AIT.PrefixInvarianceKB
 
--- Formal-check file, not Mathlib-destined: opt out of the house-style header linter.
-set_option linter.style.header false
--- The `#guard_msgs` axiom-guard expectations below cannot be wrapped (the line must match
--- compiler output verbatim); the exemption is for those three lines, per `formal/CLAUDE.md`.
-set_option linter.style.longLine false
-
 /-!
-# The halting probability of the prefix machine ([Discovery] §1.1, FV-21, FV-26)
+# The halting probability of the prefix machine
 
-Provenance: [Discovery] §1.1, over the algorithmic probability `PrefixMachine.QB` (FV-21: its
+Over the algorithmic probability `PrefixMachine.QB` (its
 semimeasure bound `two_pow_neg_KB_le_QB` and its sum bounds) and the universal-machine invariance
 `PrefixMachine.KB_partial_map_le`. Extends `AIT/CodingTheoremBitwise.lean` and
-`AIT/PrefixInvarianceKB.lean`. No paper sentence consumes `haltingProb` yet.
+`AIT/PrefixInvarianceKB.lean`.
 
 ## What this establishes
 
@@ -326,7 +315,7 @@ def revealedList (t : ℕ) : List ℕ :=
       let c := Denumerable.ofNat Code k
       if elen c + (natToBits n).length ≤ t ∧ n ∈ acceptedList c t then evaln t c n else none
 
-private theorem primrec_revealedTerm :
+private theorem primrec_revealed_term :
     Primrec fun p : (ℕ × ℕ) × ℕ =>
       (if elen (Denumerable.ofNat Code p.1.2) + (natToBits p.2).length ≤ p.1.1 ∧
           p.2 ∈ acceptedList (Denumerable.ofNat Code p.1.2) p.1.1
@@ -371,7 +360,7 @@ private theorem primrec_revealedList : Primrec revealedList := by
         (Primrec.nat_sub.comp
           (primrec_pow''.comp (Primrec.const 2) (Primrec.succ.comp Primrec.fst))
           (Primrec.const 1)))
-      primrec_revealedTerm
+      primrec_revealed_term
   exact (Primrec.list_flatMap Primrec.list_range hinner).of_eq fun t => rfl
 
 theorem computable_revealedList : Computable revealedList := primrec_revealedList.to_comp
@@ -644,26 +633,32 @@ theorem haltingProb_prefix_incompressible :
         n ≤ KB (Nat.pair n m) + c :=
   haltingProb_prefix_incompressible_of stageMass_spec revealedList_spec
 
+set_option linter.style.longLine false in
 /-- info: 'PrefixMachine.haltingProb_le_one' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs (whitespace := lax) in
 #print axioms haltingProb_le_one
 
+set_option linter.style.longLine false in
 /-- info: 'PrefixMachine.haltingProb_prefix_incompressible_of' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs (whitespace := lax) in
 #print axioms haltingProb_prefix_incompressible_of
 
+set_option linter.style.longLine false in
 /-- info: 'PrefixMachine.haltingProb_prefix_incompressible_nonvacuous' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs (whitespace := lax) in
 #print axioms haltingProb_prefix_incompressible_nonvacuous
 
+set_option linter.style.longLine false in
 /-- info: 'PrefixMachine.stageMass_spec' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs (whitespace := lax) in
 #print axioms stageMass_spec
 
+set_option linter.style.longLine false in
 /-- info: 'PrefixMachine.revealedList_spec' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs (whitespace := lax) in
 #print axioms revealedList_spec
 
+set_option linter.style.longLine false in
 /-- info: 'PrefixMachine.haltingProb_prefix_incompressible' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs (whitespace := lax) in
 #print axioms haltingProb_prefix_incompressible

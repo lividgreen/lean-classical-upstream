@@ -1,61 +1,46 @@
-/-
-Copyright (c) 2026 Mykola Palamarchuk. All rights reserved.
-Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Mykola Palamarchuk
--/
 module
 
 public import AIT.EliasBound
 public import AIT.PrefixComplexity
 public import AIT.KolmogorovTimeBounded
 
--- Formal-check file, not Mathlib-destined: opt out of the house-style header linter.
-set_option linter.style.header false
-
 /-!
-# The model cost on the prefix machine: `KB` at `K_bitlen`, `KP`, and `ruleComplexity`
+# The model cost on the prefix machine: `KB` at `K_bitlen` and `KP`
 
-Provenance: [Discovery] §1.1's `r` — the plain bit-length complexity `K_bitlen`
-(`AIT/KolmogorovTimeBounded.lean`) — and its `U_ref`, the universal prefix machine `KB`
-(`AIT/PrefixMachine.lean`, FV-20). Relates them, and the prefix complexity `KP` of FV-13
-(`AIT/PrefixComplexity.lean`) and the reconnected rule complexity of `ALT/KReconnection.lean` (in
-the companion library `lean-algorithmic-learning-theory`), none of which any landed statement
-connects to `KB`.
+Relates the plain bit-length complexity `K_bitlen` (`AIT/KolmogorovTimeBounded.lean`) and the
+prefix complexity `KP` (`AIT/PrefixComplexity.lean`) to the universal prefix machine `KB`
+(`AIT/PrefixMachine.lean`), which no other statement in the package connects.
 
 ## What this establishes
 
-Six theorems relating `KB` to `K_bitlen`, `KP`, and `ruleComplexity` — three of them over
-hypotheses this module takes as given rather than proves, three unconditional corollaries
-discharging every one of those hypotheses at a landed statement:
+Four theorems relating `KB` to `K_bitlen` and `KP` — two of them over
+hypotheses this module takes as given rather than proves, two unconditional corollaries
+discharging every one of those hypotheses at a proved statement:
 
 * `KB_le_K_bitlen_add_two_mul_size_of` — `KB x ≤ K_bitlen x + 2 * Nat.size (K_bitlen x) + c`, from
-  a partial-map invariance for `KB` (`hinv`, stronger than the landed `PrefixMachine.KB_map_le`,
+  a partial-map invariance for `KB` (`hinv`, stronger than the proved `PrefixMachine.KB_map_le`,
   which covers only total computable maps) and an unabsorbed Elias bound for `KB` (`helias`,
-  distinct from the landed `PrefixMachine.KB_le_two_mul_size`). The route: the map
+  distinct from the proved `PrefixMachine.KB_le_two_mul_size`). The route: the map
   `n ↦ (Denumerable.ofNat Code n).eval 0` is partial recursive (Mathlib's `Code.eval_part`
   composed with `Computable.ofNat` and a constant); `KolmogorovComplexity.exists_min_code` gives,
   for `x`, a code whose index is `K x` and which evaluates to `x` at that map, via
   `Denumerable.ofNat_encode`; `hinv` at that map gives `KB x ≤ KB (K x) + c₁`; `helias` at `K x`,
   rewritten along `KolmogorovComplexity.K_bitlen_eq`, gives the rest.
 * `KB_le_K_bitlen_add_two_mul_size` — the first theorem's `hinv` and `helias` discharged at the
-  landed `PrefixMachine.KB_partial_map_le` and `PrefixMachine.KB_le_size_add_two_mul_size_size`
+  proved `PrefixMachine.KB_partial_map_le` and `PrefixMachine.KB_le_size_add_two_mul_size_size`
   (`AIT/PrefixInvarianceKB.lean`, `AIT/EliasBound.lean`): unconditional.
 * `KB_le_KP_of` — `KB x ≤ KP x + c`, from `hinv` alone (no `helias`): the same route to
-  `KB x ≤ KB (K x) + c₁`, then the landed `PrefixMachine.KB_le_two_mul_size` at `K x` and
+  `KB x ≤ KB (K x) + c₁`, then the proved `PrefixMachine.KB_le_two_mul_size` at `K x` and
   `PrefixComplexity.KP_eq` with `Nat.size`'s monotonicity.
-* `KB_le_KP` — `KB_le_KP_of`'s `hinv` discharged at the landed `PrefixMachine.KB_partial_map_le`
+* `KB_le_KP` — `KB_le_KP_of`'s `hinv` discharged at the proved `PrefixMachine.KB_partial_map_le`
   (`AIT/PrefixInvarianceKB.lean`): `∃ c, ∀ x, KB x ≤ KP x + c`, unconditionally, needing no Elias
   bound at all.
-* `KB_le_ruleComplexity_add_two_mul_size_of` — the first theorem at `x := Encodable.encode R`,
-  since `KReconnection.ruleComplexity R` is `K_bitlen (Encodable.encode R)` by definition.
-* `KB_le_ruleComplexity_add_two_mul_size` — `KB_le_ruleComplexity_add_two_mul_size_of`'s `hinv` and
-  `helias` discharged the same way as `KB_le_K_bitlen_add_two_mul_size`: unconditional.
 
 ## What this does NOT establish (flagged)
 
-* `hinv` and `helias` are hypotheses of the three `_of` theorems only, not proved here — this
-  module states what follows from them, nothing about their own status. Each of the three
-  unconditional corollaries discharges every hypothesis it needs at a landed statement instead.
+* `hinv` and `helias` are hypotheses of the two `_of` theorems only, not proved here — this
+  module states what follows from them, nothing about their own status. Each of the two
+  unconditional corollaries discharges every hypothesis it needs at a proved statement instead.
 * This is not a sharpening of `PrefixMachine.KB_le_two_mul_size`: that bound and
   `KB_le_K_bitlen_add_two_mul_size_of`'s price `x` in different currencies (bit-length of `x`
   against bit-length of `x`'s own complexity), and neither dominates the other everywhere.
@@ -94,7 +79,7 @@ theorem KB_le_K_bitlen_add_two_mul_size_of
   omega
 
 /-- **`KB` at `K_bitlen`, unconditionally.** `KB_le_K_bitlen_add_two_mul_size_of`'s `hinv` and
-`helias` discharged at the landed `PrefixMachine.KB_partial_map_le` and
+`helias` discharged at the proved `PrefixMachine.KB_partial_map_le` and
 `PrefixMachine.KB_le_size_add_two_mul_size_size`. -/
 theorem KB_le_K_bitlen_add_two_mul_size :
     ∃ c, ∀ x, KB x ≤ K_bitlen x + 2 * Nat.size (K_bitlen x) + c :=
@@ -123,7 +108,7 @@ theorem KB_le_KP_of
   have hKP : KP x = 2 * Nat.size (K x + 1) := KP_eq x
   omega
 
-/-- **`KB` at `KP`, unconditionally.** `KB_le_KP_of`'s `hinv` discharged at the landed
+/-- **`KB` at `KP`, unconditionally.** `KB_le_KP_of`'s `hinv` discharged at the proved
 `PrefixMachine.KB_partial_map_le` — the partial-map invariance is exactly what this particular
 corollary needs, and nothing else. -/
 theorem KB_le_KP : ∃ c, ∀ x, KB x ≤ KP x + c := KB_le_KP_of fun f hf => KB_partial_map_le f hf

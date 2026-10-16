@@ -1,19 +1,11 @@
-/-
-Copyright (c) 2026 Mykola Palamarchuk. All rights reserved.
-Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Mykola Palamarchuk
--/
 module
 
 public import AIT.CodingTheoremBitwise
 
--- Formal-check file, not Mathlib-destined: opt out of the house-style header linter.
-set_option linter.style.header false
-
 /-!
-# The coding theorem with a logarithmic loss ([Discovery] §1.1, FV-21)
+# The coding theorem with a logarithmic loss
 
-Provenance: [Discovery] §1.1 and FV-21, over the universal prefix machine `PrefixMachine.KB`, a
+Over the universal prefix machine `PrefixMachine.KB`, a
 `LowerSemicomputable` semimeasure, and the combinatorial ingredients of `AIT/CodingTheoremWeak.lean`
 (`gammaCode`, `bitsFixed`, `card_exceeds_lt`).
 
@@ -228,8 +220,9 @@ private theorem primrec_pow' : Primrec₂ ((· ^ ·) : ℕ → ℕ → ℕ) :=
 
 set_option maxHeartbeats 1000000 in
 -- `Computable₂.comp` over this nested `ℕ × ℕ × ℕ` shape is heavy to elaborate; the default 200k
--- heartbeats is short (mirrors the Berry-search elaboration in `ChaitinIncompleteness/ChaitinIncompleteness.lean`).
-private theorem computable_crossedBool (ha_comp : Computable₂ a) :
+-- heartbeats is short (mirrors the Berry-search elaboration in
+-- `ChaitinIncompleteness/ChaitinIncompleteness.lean`).
+private theorem computable_crossed_bool (ha_comp : Computable₂ a) :
     Computable fun p : ℕ × ℕ × ℕ => decide (Crossed a p.1 p.2.1 p.2.2) := by
   have hpow_t : Primrec fun p : ℕ × ℕ × ℕ => (2 : ℕ) ^ p.2.1 :=
     primrec_pow'.comp (Primrec.const 2) (Primrec.fst.comp Primrec.snd)
@@ -242,7 +235,7 @@ private theorem computable_crossedBool (ha_comp : Computable₂ a) :
   exact Primrec.nat_lt.decide.to_comp.comp hpow_t.to_comp hrhs
 
 set_option maxHeartbeats 1000000 in
--- Same reason as `computable_crossedBool` above.
+-- Same reason as `computable_crossed_bool` above.
 private theorem computable₂_firesAt (ha_comp : Computable₂ a) : Computable₂ (firesAt a) := by
   have ht : Primrec fun p : ℕ × ℕ => (Nat.unpair p.2).1 :=
     Primrec.fst.comp (Primrec.unpair.comp Primrec.snd)
@@ -253,12 +246,12 @@ private theorem computable₂_firesAt (ha_comp : Computable₂ a) : Computable�
     hk.pair (ht.pair hy)
   have hc1 : Computable fun p : ℕ × ℕ =>
       decide (Crossed a p.1 (Nat.unpair p.2).1 (Nat.unpair p.2).2) :=
-    ((computable_crossedBool a ha_comp).comp hq1.to_comp).of_eq fun p => rfl
+    ((computable_crossed_bool a ha_comp).comp hq1.to_comp).of_eq fun p => rfl
   have hq0 : Primrec fun p : ℕ × ℕ => (p.1, (Nat.unpair p.2).1 - 1, (Nat.unpair p.2).2) :=
     hk.pair ((Primrec.nat_sub.comp ht (Primrec.const 1)).pair hy)
   have hc0 : Computable fun p : ℕ × ℕ =>
       decide (Crossed a p.1 ((Nat.unpair p.2).1 - 1) (Nat.unpair p.2).2) :=
-    ((computable_crossedBool a ha_comp).comp hq0.to_comp).of_eq fun p => rfl
+    ((computable_crossed_bool a ha_comp).comp hq0.to_comp).of_eq fun p => rfl
   have heq0 : Primrec fun p : ℕ × ℕ => decide ((Nat.unpair p.2).1 = 0) :=
     Primrec.eq.decide.comp ht (Primrec.const 0)
   have hcond : Computable fun p : ℕ × ℕ =>
@@ -296,7 +289,7 @@ def searchFiring (k i : ℕ) : Part ℕ :=
   (Nat.rfind fun m => Part.some (firesAt a k m && decide (firingCountBefore a k m = i))).map
     fun m => (Nat.unpair m).2
 
-private theorem computable_searchCond (ha_comp : Computable₂ a) :
+private theorem computable_search_cond (ha_comp : Computable₂ a) :
     Computable fun p : (ℕ × ℕ) × ℕ =>
       firesAt a p.1.1 p.2 && decide (firingCountBefore a p.1.1 p.2 = p.1.2) := by
   have hfires : Computable fun p : (ℕ × ℕ) × ℕ => firesAt a p.1.1 p.2 :=
@@ -313,7 +306,7 @@ private theorem computable_searchCond (ha_comp : Computable₂ a) :
 private theorem partrec₂_searchFiring (ha_comp : Computable₂ a) : Partrec₂ (searchFiring a) := by
   have hcond2 : Computable₂ fun (ki : ℕ × ℕ) (m : ℕ) =>
       firesAt a ki.1 m && decide (firingCountBefore a ki.1 m = ki.2) :=
-    computable_searchCond a ha_comp
+    computable_search_cond a ha_comp
   have hpart : Partrec₂ fun (ki : ℕ × ℕ) (m : ℕ) =>
       (Part.some (firesAt a ki.1 m && decide (firingCountBefore a ki.1 m = ki.2)) : Part Bool) :=
     (Computable₂.partrec₂ hcond2).of_eq fun n => rfl

@@ -1,8 +1,3 @@
-/-
-Copyright (c) 2026 Mykola Palamarchuk. All rights reserved.
-Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Mykola Palamarchuk
--/
 module
 
 public import AIT.AlgorithmicProbability
@@ -22,6 +17,7 @@ public import AIT.PrefixComplexity
 public import AIT.PrefixCounting
 public import AIT.PrefixInvarianceKB
 public import AIT.PrefixMachine
+public import AIT.PrefixMachinePrimrec
 public import AIT.PrefixModelCost
 public import AIT.PrefixPairKB
 public import AIT.StructureFunction

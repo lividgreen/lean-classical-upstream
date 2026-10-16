@@ -1,17 +1,14 @@
-/-
-Copyright (c) 2026 Mykola Palamarchuk. All rights reserved.
-Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Mykola Palamarchuk
--/
 module
 
 public import ErgodicTheory.AxiomAudit
 public import ErgodicTheory.Birkhoff.AxiomAudit
 public import ErgodicTheory.Birkhoff.PointwiseBirkhoff
 public import ErgodicTheory.DrivenColumns
+public import ErgodicTheory.ElementaryRuleClasses
 public import ErgodicTheory.LocalRuleColumns
 public import ErgodicTheory.MarkovHoeffding
 public import ErgodicTheory.MixingHoeffding
+public import ErgodicTheory.NumberConservation
 public import ErgodicTheory.PascalColumns
 
 /-!

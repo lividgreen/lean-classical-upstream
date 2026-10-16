@@ -1,53 +1,41 @@
-/-
-Copyright (c) 2026 Mykola Palamarchuk. All rights reserved.
-Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Mykola Palamarchuk
--/
 module
 
 public import Realizability.RealizabilityCCC
 public import Realizability.RealizabilityCoproduct
 
--- Formal-check file, not Mathlib-destined: opt out of the house-style linters.
-set_option linter.style.header false
-set_option linter.style.longLine false
--- Definitional `show` (unfolding assembly/composition projections to a defeq goal) is idiomatic here.
-set_option linter.style.show false
-
 /-!
-# The subobject classifier of the finite fragment of `Rep(S)` ([Decoupling] §4.2)
+# The subobject classifier of the finite fragment of the realizability category
 
-Provenance: [Decoupling] §4.2 (the block "Subobjects and the classifier"). `Realizability/RealizabilityCCC.lean`
-built the realizability category `Asm` and proved it Cartesian closed; `Realizability/RealizabilityCoproduct.lean`
-added finite coproducts. This file completes the first-order inventory of §4.2 on that same carrier:
+`Realizability/RealizabilityCCC.lean` built the realizability category `Asm` and proved it Cartesian
+closed; `Realizability/RealizabilityCoproduct.lean` added finite coproducts. This file completes the
+first-order inventory of subobjects on that same carrier:
 **comprehension subobjects**, the **one-bit subobject classifier** `Bool = 𝟙 ⊕ 𝟙`, its pullback
 universal property, and **equalizers**.
 
 ## What this establishes
 * `boolAsm := coprodAsm terminalAsm terminalAsm` — the classifier object `Bool = 𝟙 ⊕ 𝟙`, exactly one
-  tag bit; `tru : 𝟙 ⟶ boolAsm` is its first injection ([Decoupling] §4.2, "`true : 1 → Bool` its first
-  injection").
+  tag bit; `tru : 𝟙 ⟶ boolAsm` is its first injection.
 * `subAsm A P` — the comprehension subobject `{ a : A | P a }`, carrier the subtype, realizability
-  inherited from `A`; its inclusion `subIncl` is realized by the identity program (encodings shared),
-  so subobjects cost no capacity.
+  inherited from `A`; its inclusion `subIncl` is realized by the identity program (encodings
+  shared), so subobjects cost no capacity.
 * `chi A P hA : A ⟶ boolAsm` — the characteristic map, a morphism because every function out of a
-  finite object is realized ([Decoupling] §4.1, here the hypothesis `AllTrackable A`, which `finAsm`
+  finite object is realized (here the hypothesis `AllTrackable A`, which `finAsm`
   satisfies).
 * `chi_comp_subIncl` + `classifier_universal` — the classifying square commutes and is a pullback:
-  `u : C ⟶ A` factors through the comprehension subobject **iff** `χ_P ∘ u` is constantly `true`; the
-  factorization carries `u`'s own realizer (no finiteness on `C`).
-* `chi_unique` — the characteristic map is the *unique* morphism making that square a pullback, global
-  elements (constant maps out of `𝟙`) separating the finite carrier.
-* `eqAsm` + `equalizer_universal` — equalizers as comprehension subobjects, with their fork universal
-  property.
+  `u : C ⟶ A` factors through the comprehension subobject **iff** `χ_P ∘ u` is constantly `true`;
+  the factorization carries `u`'s own realizer (no finiteness on `C`).
+* `chi_unique` — the characteristic map is the *unique* morphism making that square a pullback,
+  global elements (constant maps out of `𝟙`) separating the finite carrier.
+* `eqAsm` + `equalizer_universal` — equalizers as comprehension subobjects, with their fork
+  universal property.
 
-## Fidelity boundary ([Decoupling] §4.2)
+## Boundary
 The classifier claim is for the **finite fragment**: it needs every function out of the classified
-object to be a morphism (`AllTrackable`), which is the §4.1 property of *encoded finite objects*
+object to be a morphism (`AllTrackable`), which holds for *encoded finite objects*
 (`finAsm` witnesses it) and not a property of general assemblies — for assemblies over a partial
 combinatory algebra no full classifier exists (a quasitopos, not a topos; van Oosten 2008). The
-comprehension subobjects are classified here; that a *mono* between finite objects is isomorphic to a
-comprehension subobject (upgrading the classification to all monos) is stated at paper level.
+comprehension subobjects are classified here; that a *mono* between finite objects is isomorphic to
+a comprehension subobject (upgrading the classification to all monos) is not proved here.
 -/
 
 
@@ -59,8 +47,8 @@ open RealizabilityCCC RealizabilityCoproduct CategoryTheory
 
 /-! ### The terminal projection as a bundled morphism -/
 
-/-- The unique morphism into the terminal object `𝟙`, bundled (`RealizabilityCCC.trackable_toTerminal`
-supplies the tracking). -/
+/-- The unique morphism into the terminal object `𝟙`, bundled
+(`RealizabilityCCC.trackable_toTerminal` supplies the tracking). -/
 def toTerminal (A : Asm) : A ⟶ terminalAsm :=
   ⟨fun _ => PUnit.unit, trackable_toTerminal A⟩
 
@@ -88,10 +76,10 @@ noncomputable def globalElt (A : Asm) (a : A.carrier) : terminalAsm ⟶ A :=
 /-! ### The classifier object `Bool = 𝟙 ⊕ 𝟙` -/
 
 /-- The **subobject classifier** `Bool := 𝟙 ⊕ 𝟙`, the coproduct of two singletons — exactly one tag
-bit ([Decoupling] §4.2). -/
+bit. -/
 def boolAsm : Asm := coprodAsm terminalAsm terminalAsm
 
-/-- `true : 𝟙 ⟶ Bool`, the first injection ([Decoupling] §4.2). -/
+/-- `true : 𝟙 ⟶ Bool`, the first injection. -/
 def tru : terminalAsm ⟶ boolAsm := inl terminalAsm terminalAsm
 
 /-- The classifier carrier has exactly two global values, `true = inl ⋆` and `false = inr ⋆`. -/
@@ -110,7 +98,7 @@ def boolEquiv : boolAsm.carrier ≃ Bool where
 
 instance : Fintype boolAsm.carrier := Fintype.ofEquiv Bool boolEquiv.symm
 
-/-- The classifier has exactly two elements — `|Bool| = 2` (the one tag bit of §4.2). -/
+/-- The classifier has exactly two elements — `|Bool| = 2` (the one tag bit). -/
 @[simp] theorem boolAsm_card : Fintype.card boolAsm.carrier = 2 := by
   rw [Fintype.card_congr boolEquiv]; exact Fintype.card_bool
 
@@ -132,9 +120,9 @@ def subIncl (A : Asm) (P : A.carrier → Prop) : subAsm A P ⟶ A :=
     (subIncl A P).1 x = x.1 := rfl
 
 /-- **Factorization through a comprehension subobject.** A morphism `u : C ⟶ A` whose image lands in
-`{ a : A | P a }` factors *uniquely* through the inclusion, and the factor carries `u`'s own realizer
-(shared encodings) — so no finiteness on `C` is needed. This is the shared core of the classifier and
-equalizer universal properties. -/
+`{ a : A | P a }` factors *uniquely* through the inclusion, and the factor carries `u`'s own
+realizer (shared encodings) — so no finiteness on `C` is needed. This is the shared core of the
+classifier and equalizer universal properties. -/
 theorem subAsm_factor {A : Asm} (P : A.carrier → Prop) {C : Asm} (u : C ⟶ A)
     (hP : ∀ c, P (u.1 c)) :
     ∃! v : C ⟶ subAsm A P, v ≫ subIncl A P = u := by
@@ -147,18 +135,18 @@ theorem subAsm_factor {A : Asm} (P : A.carrier → Prop) {C : Asm} (u : C ⟶ A)
     apply Subtype.ext; funext c; apply Subtype.ext
     exact congrArg (fun m => m.1 c) hv'
 
-/-! ### Finite objects: every function out of them is a morphism ([Decoupling] §4.1) -/
+/-! ### Finite objects: every function out of them is a morphism -/
 
-/-- The [Decoupling] §4.1 property of an *encoded finite object*: every function out of `A` is realized (a
-morphism). It is what makes a characteristic map a morphism. General assemblies need not have it — the
-realizability relation may fail to separate elements — but `finAsm` does (`finAsm_allTrackable`), and
-so do the encoded finite objects of `Rep(S)`. -/
+/-- The property of an *encoded finite object*: every function out of `A` is realized (a
+morphism). It is what makes a characteristic map a morphism. General assemblies need not have it —
+the realizability relation may fail to separate elements — but `finAsm` does
+(`finAsm_allTrackable`), and so do all encoded finite objects. -/
 def AllTrackable (A : Asm) : Prop := ∀ (B : Asm) (g : A.carrier → B.carrier), Trackable A B g
 
 /-- The finite assembly `finAsm M` is an encoded finite object: every function out of it is a
-morphism (`RealizabilityCoproduct.trackable_of_finDom`). -/
+morphism (`RealizabilityCoproduct.trackable_of_fin_dom`). -/
 theorem finAsm_allTrackable (M : ℕ) : AllTrackable (finAsm M) :=
-  fun B g => trackable_of_finDom M B g
+  fun B g => trackable_of_fin_dom M B g
 
 /-! ### The characteristic map and the classifier property -/
 
@@ -174,9 +162,8 @@ theorem charFn_eq_true_iff {A : Asm} (P : A.carrier → Prop) [DecidablePred P] 
   · refine iff_of_false ?_ h
     simp [h]
 
-/-- The **characteristic map** `χ_P : A ⟶ Bool` of a comprehension subobject ([Decoupling] §4.2). A
-morphism because `A` is a finite object out of which every function is realized (`hA`, the §4.1
-property). -/
+/-- The **characteristic map** `χ_P : A ⟶ Bool` of a comprehension subobject. A
+morphism because `A` is a finite object out of which every function is realized (`hA`). -/
 def chi (A : Asm) (P : A.carrier → Prop) [DecidablePred P] (hA : AllTrackable A) : A ⟶ boolAsm :=
   ⟨charFn P, hA boolAsm (charFn P)⟩
 
@@ -190,19 +177,20 @@ theorem hom_from_terminal_ext {B : Asm} (p q : terminalAsm ⟶ B)
   cases x
   exact h
 
-/-- **The classifying square commutes** ([Decoupling] §4.2): `i ≫ χ_P = ! ≫ true`, i.e. `χ_P` is constantly
+/-- **The classifying square commutes**: `i ≫ χ_P = ! ≫ true`, i.e. `χ_P` is constantly
 `true` on the subobject. -/
 theorem chi_comp_subIncl (A : Asm) (P : A.carrier → Prop) [DecidablePred P] (hA : AllTrackable A) :
     subIncl A P ≫ chi A P hA = toTerminal (subAsm A P) ≫ tru := by
   apply Subtype.ext; funext x
-  show charFn P x.1 = Sum.inl PUnit.unit
+  change charFn P x.1 = Sum.inl PUnit.unit
   exact (charFn_eq_true_iff P x.1).mpr x.2
 
 /-- **The classifier universal property (pullback).** For every `u : C ⟶ A`, the outer square with
 `true` commutes — `u ≫ χ_P = ! ≫ true` — **iff** `u` factors (uniquely) through the comprehension
-subobject `{ a : A | P a }`. Equivalently, the classifying square is a pullback. No finiteness on `C`
-is needed: the factor carries `u`'s own realizer (`subAsm_factor`). -/
-theorem classifier_universal (A : Asm) (P : A.carrier → Prop) [DecidablePred P] (hA : AllTrackable A)
+subobject `{ a : A | P a }`. Equivalently, the classifying square is a pullback. No finiteness on
+`C` is needed: the factor carries `u`'s own realizer (`subAsm_factor`). -/
+theorem classifier_universal (A : Asm) (P : A.carrier → Prop) [DecidablePred P]
+    (hA : AllTrackable A)
     {C : Asm} (u : C ⟶ A) :
     u ≫ chi A P hA = toTerminal C ≫ tru ↔
       ∃! v : C ⟶ subAsm A P, v ≫ subIncl A P = u := by
@@ -220,22 +208,23 @@ theorem classifier_universal (A : Asm) (P : A.carrier → Prop) [DecidablePred P
       have := (v.1 c).2
       rwa [hval] at this
     apply Subtype.ext; funext c
-    show charFn P (u.1 c) = Sum.inl PUnit.unit
+    change charFn P (u.1 c) = Sum.inl PUnit.unit
     exact (charFn_eq_true_iff P (u.1 c)).mpr (hP c)
 
-/-- **Uniqueness of the classifying map** ([Decoupling] §4.2): any `χ' : A ⟶ Bool` making the same square a
-pullback of the same comprehension subobject equals `χ_P`. Global elements (constant morphisms out of
-`𝟙`, one per element of the carrier) separate the finite carrier: at each `a`, testing the pullback
-condition against the point `a` forces `χ' a = true ↔ P a`. -/
+/-- **Uniqueness of the classifying map**: any `χ' : A ⟶ Bool` making the same square a
+pullback of the same comprehension subobject equals `χ_P`. Global elements (constant morphisms out
+of `𝟙`, one per element of the carrier) separate the finite carrier: at each `a`, testing the
+pullback condition against the point `a` forces `χ' a = true ↔ P a`. -/
 theorem chi_unique (A : Asm) (P : A.carrier → Prop) [DecidablePred P] (hA : AllTrackable A)
     (χ' : A ⟶ boolAsm)
     (hχ' : ∀ {C : Asm} (u : C ⟶ A),
       u ≫ χ' = toTerminal C ≫ tru ↔ ∃! v : C ⟶ subAsm A P, v ≫ subIncl A P = u) :
     χ' = chi A P hA := by
   apply Subtype.ext; funext a
-  show χ'.1 a = charFn P a
+  change χ'.1 a = charFn P a
   -- Claim A: the square at the point `a` is equivalent to `χ' a = true`.
-  have hA_sq : (globalElt A a ≫ χ' = toTerminal terminalAsm ≫ tru) ↔ χ'.1 a = Sum.inl PUnit.unit := by
+  have hA_sq : (globalElt A a ≫ χ' = toTerminal terminalAsm ≫ tru) ↔ χ'.1 a = Sum.inl PUnit.unit :=
+      by
     constructor
     · intro heq; exact congrArg (fun m => m.1 PUnit.unit) heq
     · intro heq; exact hom_from_terminal_ext _ _ heq
@@ -264,17 +253,17 @@ theorem chi_unique (A : Asm) (P : A.carrier → Prop) [DecidablePred P] (hA : Al
 
 /-! ### Equalizers as comprehension subobjects -/
 
-/-- The **equalizer** of `f, g : A ⟶ B` as a comprehension subobject `{ a : A | f a = g a }` ([Decoupling]
-§4.2: equality of encodings is decidable on finite objects, so equalizers are comprehension
-subobjects, fitting wherever `A` does). -/
+/-- The **equalizer** of `f, g : A ⟶ B` as a comprehension subobject `{ a : A | f a = g a }`
+(equality of encodings is decidable on finite objects, so equalizers are comprehension subobjects,
+fitting wherever `A` does). -/
 def eqAsm {A B : Asm} (f g : A ⟶ B) : Asm := subAsm A (fun a => f.1 a = g.1 a)
 
 /-- The equalizer inclusion `Eq(f,g) ↪ A`. -/
 def eqIncl {A B : Asm} (f g : A ⟶ B) : eqAsm f g ⟶ A := subIncl A (fun a => f.1 a = g.1 a)
 
-/-- **The equalizer universal property (fork).** `u : C ⟶ A` coequalizes `f` and `g` — `u ≫ f = u ≫ g`
-— **iff** it factors (uniquely) through the equalizer. No finiteness on `C`: the factor carries `u`'s
-realizer (`subAsm_factor`). -/
+/-- **The equalizer universal property (fork).** `u : C ⟶ A` coequalizes `f` and `g` —
+`u ≫ f = u ≫ g` — **iff** it factors (uniquely) through the equalizer. No finiteness on `C`: the
+factor carries `u`'s realizer (`subAsm_factor`). -/
 theorem equalizer_universal {A B : Asm} (f g : A ⟶ B) {C : Asm} (u : C ⟶ A) :
     u ≫ f = u ≫ g ↔ ∃! v : C ⟶ eqAsm f g, v ≫ eqIncl f g = u := by
   constructor
@@ -283,7 +272,7 @@ theorem equalizer_universal {A B : Asm} (f g : A ⟶ B) {C : Asm} (u : C ⟶ A) 
   · rintro ⟨v, hv, -⟩
     have hu : ∀ c, u.1 c = (v.1 c).1 := fun c => (congrArg (fun m => m.1 c) hv).symm
     apply Subtype.ext; funext c
-    show f.1 (u.1 c) = g.1 (u.1 c)
+    change f.1 (u.1 c) = g.1 (u.1 c)
     rw [hu c]; exact (v.1 c).2
 
 end RealizabilitySubobject

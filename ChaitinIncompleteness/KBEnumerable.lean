@@ -1,24 +1,15 @@
-/-
-Copyright (c) 2026 Mykola Palamarchuk. All rights reserved.
-Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Mykola Palamarchuk
--/
 module
 
 public import ChaitinIncompleteness.ChaitinPrefix
 public import CodeLayer.SerializationParse
 public import Foundation.FirstOrder.Incompleteness.Examples
 
--- Formal-check file, not Mathlib-destined: opt out of the house-style header linter.
-set_option linter.style.header false
-
 /-!
-# `KB`'s coded-pair predicate is computably enumerable ([Decoupling] §6.6, [Discovery] §1.1)
+# `KB`'s coded-pair predicate is computably enumerable
 
-Provenance: [Decoupling] §6.6 (the additive form of Theorem 6.6 this predicate serves) and
-[Discovery] §1.1 (`KB`, FV-20). Discharges `KolmogorovComplexity.REPred kleB`, the second leaf
-hypothesis of `ChaitinPrefix.lean`'s additive Chaitin bound — the twin of `rePred_kle` at `KB`
-in place of `K_bitlen`. Both leaves (`EParserSpec` too) being present here also assembles the
+Discharges `KolmogorovComplexity.REPred kleB`, the second premise
+of `ChaitinPrefix.lean`'s additive Chaitin bound — the twin of `rePred_kle` at `KB`
+in place of `K_bitlen`. Both premises (`EParserSpec` too) being present here also assembles the
 unconditional theory-level statements they were blocking.
 
 ## What this establishes
@@ -28,14 +19,14 @@ unconditional theory-level statements they were blocking.
   not only the least one — the search `rePred_kleB` dovetails over.
 * `rePred_kleB`: `kleB` is computably enumerable, dovetailing over a witness code, a binary
   argument and a step budget.
-* `chaitin_bound_KB`, `chaitin_bound_KB_min`, `chaitin_theoremB`, `chaitin_theoremB_RE`: the
+* `chaitin_bound_KB`, `chaitin_bound_KB_min`, `chaitin_theorem_KB`, `chaitin_theorem_KB_RE`: the
   `ChaitinPrefix.lean` bounds, unconditional now that both leaves are proved.
-* `exists_enumerator_chaitinB`: a theory's provability predicate at `chaitinSentenceB`, decidable
+* `exists_enumerator_chaitin_KB`: a theory's provability predicate at `chaitinSentenceB`, decidable
   by `T.Δ₁`, is exhibited BY a `Code`, not merely asserted enumerable.
-* `chaitin_theoremB_nonvacuous`: a concrete theory (`𝗣𝗔⁻`) meeting every instance `chaitin_theoremB`
-  asks for, together with its own enumerator.
-* `setOf_KB_le_finite`, `chaitin_true_unprovableB`: the counting bound on `KB` and the
-  true-and-unprovable family at the additive constant, `KB`'s twin of `chaitin_true_unprovable`.
+* `chaitin_theorem_KB_nonvacuous`: a concrete theory (`𝗣𝗔⁻`) meeting every instance
+  `chaitin_theorem_KB` asks for, together with its own enumerator.
+* `chaitin_true_unprovable_KB`: the true-and-unprovable family at the additive constant, `KB`'s
+  twin of `chaitin_true_unprovable`.
 
 ## What this does NOT establish (flagged)
 * Nothing beyond the two leaves and the assembly above; the abstract bounds' own boundaries
@@ -186,28 +177,28 @@ theorem chaitin_bound_KB_min : ∃ c₀ : Code, ∀ e : Code,
     ∀ s n, (e.eval (Nat.pair s n)).Dom → n < elen c₀ + KB (Encodable.encode e) :=
   chaitin_bound_KB_of_min eParserSpec
 
-/-- **Chaitin's incompleteness theorem, additive form, unconditional.** `chaitin_theoremB_of` at
+/-- **Chaitin's incompleteness theorem, additive form, unconditional.** `chaitin_theorem_KB_of` at
 the now-proved `eParserSpec` and `rePred_kleB`. -/
-theorem chaitin_theoremB : ∃ c₀ : Code, ∀ (T : ArithmeticTheory) [T.Δ₁] [𝗥₀ ⪯ T]
+theorem chaitin_theorem_KB : ∃ c₀ : Code, ∀ (T : ArithmeticTheory) [T.Δ₁] [𝗥₀ ⪯ T]
     [FFL.Entailment.Consistent T] (e : Code),
     (∀ a, (e.eval a).Dom ↔ T ⊢ chaitinSentenceB (Nat.unpair a).1 (Nat.unpair a).2) →
     ∀ s n, T ⊢ chaitinSentenceB s n → n < elen c₀ + KB (Encodable.encode e) :=
-  chaitin_theoremB_of eParserSpec rePred_kleB
+  chaitin_theorem_KB_of eParserSpec rePred_kleB
 
 /-- Transported to any recursively enumerable, consistent extension of `𝗥₀`, unconditional. -/
-theorem chaitin_theoremB_RE : ∃ c₀ : Code, ∀ (T : ArithmeticTheory) [T.RE] [𝗥₀ ⪯ T]
+theorem chaitin_theorem_KB_RE : ∃ c₀ : Code, ∀ (T : ArithmeticTheory) [T.RE] [𝗥₀ ⪯ T]
     [FFL.Entailment.Consistent T] (e : Code),
     (∀ a, (e.eval a).Dom ↔ T ⊢ chaitinSentenceB (Nat.unpair a).1 (Nat.unpair a).2) →
     ∀ s n, T ⊢ chaitinSentenceB s n → n < elen c₀ + KB (Encodable.encode e) :=
-  chaitin_theoremB_of_RE eParserSpec rePred_kleB
+  chaitin_theorem_KB_of_RE eParserSpec rePred_kleB
 
 /-- **A theory's `chaitinSentenceB`-provability predicate is exhibited by a `Code`**, not only
-asserted enumerable: `rePred_provable_chaitinB`'s `REPred`, unpacked through `REPred.iff'` into a
+asserted enumerable: `rePred_provable_chaitin_KB`'s `REPred`, unpacked through `REPred.iff'` into a
 partial `Unit`-valued function, then through `Nat.Partrec.Code.exists_code` into a `Code` whose
 own halting domain agrees — the shape `chaitin_bound`'s proof opens with. -/
-theorem exists_enumerator_chaitinB (T : ArithmeticTheory) [T.Δ₁] :
+theorem exists_enumerator_chaitin_KB (T : ArithmeticTheory) [T.Δ₁] :
     ∃ e : Code, ∀ a, (e.eval a).Dom ↔ T ⊢ chaitinSentenceB (Nat.unpair a).1 (Nat.unpair a).2 := by
-  obtain ⟨f, hf, hfQ⟩ := REPred.iff'.mp (rePred_provable_chaitinB T)
+  obtain ⟨f, hf, hfQ⟩ := REPred.iff'.mp (rePred_provable_chaitin_KB T)
   have hf' : Partrec fun a => (f a).map fun _ : Unit => (0 : ℕ) :=
     Partrec.map hf (Computable.const 0).to₂
   obtain ⟨e, he⟩ := Nat.Partrec.Code.exists_code.1 (Partrec.nat_iff.mp hf')
@@ -216,53 +207,27 @@ theorem exists_enumerator_chaitinB (T : ArithmeticTheory) [T.Δ₁] :
   change (f a).Dom ↔ _
   exact (hfQ a).symm
 
-/-- **`chaitin_theoremB`'s hypotheses are jointly satisfiable**: the concrete theory `𝗣𝗔⁻` (finite,
-`Δ₁` via `Theory.Δ₁.ofFinite`, `𝗥₀ ⪯ 𝗣𝗔⁻` and consistent, all found by instance search — the same
-witness `ALT/GodelComplete.lean` of the companion library `lean-algorithmic-learning-theory` uses)
+/-- **`chaitin_theorem_KB`'s hypotheses are jointly satisfiable**: the concrete theory `𝗣𝗔⁻`
+(finite, `Δ₁` via `Theory.Δ₁.ofFinite`, `𝗥₀ ⪯ 𝗣𝗔⁻` and consistent, all found by instance search)
 meets every instance binder at once, together with its own enumerator. -/
-theorem chaitin_theoremB_nonvacuous :
+theorem chaitin_theorem_KB_nonvacuous :
     ∃ (T : ArithmeticTheory) (_ : T.Δ₁) (_ : (𝗥₀ : ArithmeticTheory) ⪯ T)
       (_ : FFL.Entailment.Consistent T) (e : Code),
       ∀ a, (e.eval a).Dom ↔ T ⊢ chaitinSentenceB (Nat.unpair a).1 (Nat.unpair a).2 := by
-  obtain ⟨e, he⟩ := exists_enumerator_chaitinB 𝗣𝗔⁻
+  obtain ⟨e, he⟩ := exists_enumerator_chaitin_KB 𝗣𝗔⁻
   exact ⟨𝗣𝗔⁻, inferInstance, inferInstance, inferInstance, e, he⟩
-
-/-- **The counting bound on `KB`**: at most finitely many naturals are describable within a fixed
-budget — `KB`'s twin of `AdditiveComplexity.finite_KE_le`, over `E c ++ q` (injective by
-`E_append_inj`) in place of `E c` alone, since a `KB`-description carries an argument too. -/
-theorem setOf_KB_le_finite (L : ℕ) : {x : ℕ | KB x ≤ L}.Finite := by
-  have hinj : Function.Injective fun x : ℕ => (minDescCode x, minDescArg x) := by
-    intro x y hxy
-    have hx := (minDesc_spec x).1
-    have hy := (minDesc_spec y).1
-    rw [Prod.mk.injEq] at hxy
-    rw [hxy.1, hxy.2] at hx
-    exact Part.mem_unique hx hy
-  have hinj' : Function.Injective fun x : ℕ => E (minDescCode x) ++ minDescArg x := by
-    intro x y hxy
-    have := (E_append_inj (minDescCode x) (minDescCode y) (minDescArg x) (minDescArg y) hxy).1
-    exact hinj (Prod.ext this
-      ((E_append_inj (minDescCode x) (minDescCode y) (minDescArg x) (minDescArg y) hxy).2))
-  have hsub : {x : ℕ | KB x ≤ L} ⊆
-      (fun x => E (minDescCode x) ++ minDescArg x) ⁻¹' ↑(bitLists L) := fun x hx =>
-    mem_bitLists (by
-      have h2 : (E (minDescCode x)).length + (minDescArg x).length = KB x := (minDesc_spec x).2
-      simp only [List.length_append]
-      rw [h2]
-      exact hx)
-  exact Set.Finite.subset (Set.Finite.preimage hinj'.injOn (bitLists L).finite_toSet) hsub
 
 /-- **`KB`'s true-and-unprovable family, at the additive constant.** `KB`'s twin of
 `chaitin_true_unprovable`: at every `s` past the constant `elen c₀ + KB (Encodable.encode e)`,
 the sentence "the prefix complexity of `s` exceeds that constant" is true in `ℕ` yet unprovable
 in `T`. -/
-theorem chaitin_true_unprovableB : ∃ c₀ : Code, ∀ (T : ArithmeticTheory) [T.Δ₁] [𝗥₀ ⪯ T]
+theorem chaitin_true_unprovable_KB : ∃ c₀ : Code, ∀ (T : ArithmeticTheory) [T.Δ₁] [𝗥₀ ⪯ T]
     [FFL.Entailment.Consistent T] (e : Code),
     (∀ a, (e.eval a).Dom ↔ T ⊢ chaitinSentenceB (Nat.unpair a).1 (Nat.unpair a).2) →
     ∀ s, elen c₀ + KB (Encodable.encode e) < KB s →
       (ℕ↓[ℒₒᵣ] ⊧ chaitinSentenceB s (elen c₀ + KB (Encodable.encode e))) ∧
         T ⊬ chaitinSentenceB s (elen c₀ + KB (Encodable.encode e)) := by
-  obtain ⟨c₀, hc₀⟩ := chaitin_theoremB
+  obtain ⟨c₀, hc₀⟩ := chaitin_theorem_KB
   refine ⟨c₀, fun T _ _ _ e henum s hs => ⟨?_, fun h => ?_⟩⟩
   · exact (models_chaitinSentenceB_iff rePred_kleB s _).mpr hs
   · exact absurd (hc₀ T e henum s _ h) (_root_.lt_irrefl _)

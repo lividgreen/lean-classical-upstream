@@ -1,64 +1,51 @@
-/-
-Copyright (c) 2026 Mykola Palamarchuk. All rights reserved.
-Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Mykola Palamarchuk
--/
 module
 
 public import Learning.SQBounds
 public import Mathlib.Algebra.Field.ZMod
 
--- Formal-check file, not Mathlib-destined: opt out of the house-style header linter.
-set_option linter.style.header false
--- `SepFam` is an undecidable predicate over abstract types, so the `filter` in `sqDim` needs a
--- classical instance; scope-level `open scoped Classical` (Framework §) is deliberate here.
-set_option linter.style.openClassical false
-
 /-!
-# Genuine SQ objects: concept class, statistical query (SQ) dimension, oracle ([SQ] §3, FV-J)
+# Genuine SQ objects: concept class, statistical query (SQ) dimension, oracle
 
-Provenance: [SQ], §3.1 (the SQ oracle answers a query
-`φ : Input → [−1,1]` with an estimate of `E_D[φ]` within tolerance `τ`), §3.4 (the statistical
-dimension: "every `τ`-separated subfamily of `M` has size at most `d_SQ(M, μ)`" — distribution-
-SPECIFIC, the BQ1 point of §3), §5 (parity has `d_SQ = 2^Ω(n)`), and Appendix A ("a query separates
-`R'` from the truth whenever `|E_{R'}[φ] − E_R[φ]| > 2τ`").
+The statistical-query (SQ) model (Kearns 1998; Blum et al. 1994): the SQ oracle answers a query
+`φ : Input → [−1,1]` with an estimate of `E_D[φ]` within tolerance `τ`; the statistical dimension
+is "every `τ`-separated subfamily of `M` has size at most `d_SQ(M, μ)`" — distribution-SPECIFIC;
+parity has `d_SQ = 2^Ω(n)`; and a query separates a candidate `R'` from the truth whenever
+`|E_{R'}[φ] − E_R[φ]| > 2τ`.
 
-FV-J makes these objects GENUINE, replacing the real-valued stand-ins of FV-A3
-(`ALT/ParityCounterexample.lean` in the companion library `lean-algorithmic-learning-theory`, where
-`dSQ` is a bare exponential) and FV-A4 (`ALT/SQVersionSpace.lean`, same library). Candidates are
+This file makes these objects GENUINE, in place of the real-valued stand-in `SQBounds.dSQ`, a bare
+exponential. Candidates are
 indexed by an abstract type `ι` (as in the other SQ files, to avoid `DecidableEq`-on-functions
 pain), the answer functional `ans : Q → ι → ℝ` is abstract (covering both the distributional
 `E_{R'}[φ]` and the correlational parity form), and the statistical dimension is the genuine max
 separated-subfamily size.
 
 The headline: parity's `d_SQ = 2^Ω(n)` becomes a THEOREM (`sqDim_parity_ge`, via character
-orthogonality), bridging FV-A3's previously-MODELED exponential premise (`parity_dSQ_ge_exp`).
+orthogonality), bridging to the MODELED exponential `SQBounds.dSQ` (`parity_dSQ_ge_exp`).
 
 ## What this DOES establish
 * `Separates`, `SepFam`, `sqDim`, `IsSQOracle` — the SQ objects as genuine definitions.
-* `sepFam_card_le_sqDim` — the §3.4 characterization, now DEFINITIONAL (`Finset.le_sup`): every
+* `sepFam_card_le_sqDim` — the characterization, now DEFINITIONAL (`Finset.le_sup`): every
   `τ`-separated subfamily has card `≤ sqDim`.
-* `survivors_card_le_sqDim` — the pigeonhole upgrade of FV-A4's envelope: a pairwise-separated
+* `survivors_card_le_sqDim` — the pigeonhole bound: a pairwise-separated
   survivor set `V ⊆ M` has `V.card ≤ sqDim M τ ans`.
-* `survivors_polyBounded_of_separated` — reusing `ParityCounterexample.PolyBounded` verbatim:
+* `survivors_polyBounded_of_separated` — reusing `SQBounds.PolyBounded` verbatim:
   Assumption A on the GENUINE `sqDim` (as a family) plus pairwise separation ⇒ survivor count is
   `poly`. (For the envelope under `2τ`-identifiability see `SQEnvelope.lean`; the unconditional
   version is not formalized.)
-* `sqDim_mono_queries` (BQ1) — fewer separating queries ⇒ smaller-or-equal dimension: the
+* `sqDim_mono_queries` — fewer separating queries ⇒ smaller-or-equal dimension: the
   distribution-specificity of `d_SQ(M, μ)` (a distribution-specific `ans` never exceeds a
   distribution-free `ans'` that can realize all its separations).
 * Parity (`ι = Q = Finset (Fin n)`, uniform weights): `chi_add_single`, `sum_chi_eq_zero`,
   correlational `ansPar` with exact orthogonality `ansPar_eq`, and the headline
-  `sqDim_parity_ge : 2^n ≤ sqDim univ τ ansPar` for `τ < 1`, bridged to FV-A3 by
+  `sqDim_parity_ge : 2^n ≤ sqDim univ τ ansPar` for `τ < 1`, bridged to the modeled exponential by
   `parity_dSQ_ge_exp` (`dSQ (log 2) n ≤ sqDim`, since `exp(n·log 2) = 2^n`).
 
 ## What this does NOT establish (out of scope here; no overclaiming)
 * Not the BFJKMR envelope theorem proper (the version-space bound WITHOUT the pairwise-separation
   hypothesis) — that is the statistical-dimension machinery beyond this file.
 * Not the query-schedule construction, nor connecting `ansPar` to actual dynamics/rules (the
-  algorithm layer — `ALT/SQAlgorithm.lean` in the companion library
-  `lean-algorithmic-learning-theory`).
-* Not Raz's `Ω(r²)` memory lower bound (context citation), nor the FV-E union-bound glue
+  algorithm layer).
+* Not Raz's `Ω(r²)` memory lower bound (context citation), nor the union-bound glue
   (`sq_oracle_concentration`) — de-scoped; the oracle predicate `IsSQOracle` is supplied, but the
   finite-query union bound is left as residue.
 -/
@@ -70,26 +57,26 @@ namespace SQObjects
 
 section Framework
 
-open scoped Classical
-
 variable {ι Q : Type*}
 
 /-- A query `φ` **separates** candidates `i, j` (at tolerance `τ`) when their answers differ by more
-than `τ` (Appendix A: `|E_{R'}[φ] − E_R[φ]|` exceeds the threshold). -/
+than `τ` (`|E_{R'}[φ] − E_R[φ]|` exceeds the threshold). -/
 def Separates (τ : ℝ) (ans : Q → ι → ℝ) (φ : Q) (i j : ι) : Prop :=
   τ < |ans φ i - ans φ j|
 
 /-- A **separated subfamily** `S ⊆ M`: every two distinct members are distinguished by some query
-(§3.4, "τ-separated subfamily of `M`"). -/
+(a `τ`-separated subfamily of `M`). -/
 def SepFam (M : Finset ι) (τ : ℝ) (ans : Q → ι → ℝ) (S : Finset ι) : Prop :=
   S ⊆ M ∧ ∀ i ∈ S, ∀ j ∈ S, i ≠ j → ∃ φ, Separates τ ans φ i j
 
-/-- The **statistical dimension** `d_SQ(M, μ)` (§3.4): the largest size of a `τ`-separated subfamily
+open scoped Classical in
+/-- The **statistical dimension** `d_SQ(M, μ)`: the largest size of a `τ`-separated subfamily
 of `M`. Genuine max over the (finite) powerset — no longer a bare exponential stand-in. -/
 noncomputable def sqDim (M : Finset ι) (τ : ℝ) (ans : Q → ι → ℝ) : ℕ :=
   (M.powerset.filter (SepFam M τ ans)).sup Finset.card
 
-/-- The §3.4 characterization, now definitional: **every** `τ`-separated subfamily has size at most
+open scoped Classical in
+/-- The characterization, now definitional: **every** `τ`-separated subfamily has size at most
 `sqDim` (`Finset.le_sup` on the filtered powerset). -/
 theorem sepFam_card_le_sqDim (M : Finset ι) (τ : ℝ) (ans : Q → ι → ℝ)
     {S : Finset ι} (hS : SepFam M τ ans S) : S.card ≤ sqDim M τ ans := by
@@ -97,7 +84,7 @@ theorem sepFam_card_le_sqDim (M : Finset ι) (τ : ℝ) (ans : Q → ι → ℝ)
   rw [Finset.mem_filter, Finset.mem_powerset]
   exact ⟨hS.1, hS⟩
 
-/-- Survivor pigeonhole (the definitional upgrade of FV-A4's version-space envelope): a survivor set
+/-- Survivor pigeonhole (the definitional bound on a version space): a survivor set
 `V ⊆ M` that is pairwise `τ`-separated has `V.card ≤ sqDim M τ ans`. -/
 theorem survivors_card_le_sqDim (M : Finset ι) (τ : ℝ) (ans : Q → ι → ℝ)
     {V : Finset ι} (hV : V ⊆ M)
@@ -105,6 +92,7 @@ theorem survivors_card_le_sqDim (M : Finset ι) (τ : ℝ) (ans : Q → ι → �
     V.card ≤ sqDim M τ ans :=
   sepFam_card_le_sqDim M τ ans ⟨hV, hsep⟩
 
+open scoped Classical in
 /-- **The statistical dimension never exceeds the family's own size.**  The sup runs over
 subfamilies of `M`, and every one of them is a subset — so a finite rule class of size `|M|` has
 `d_SQ ≤ |M|` unconditionally, which is how a concrete finite class discharges Assumption A. -/
@@ -112,6 +100,7 @@ theorem sqDim_le_card (M : Finset ι) (τ : ℝ) (ans : Q → ι → ℝ) : sqDi
   refine Finset.sup_le fun S hS => ?_
   exact Finset.card_le_card (Finset.mem_powerset.mp (Finset.mem_filter.mp hS).1)
 
+open scoped Classical in
 /-- BQ1 (distribution-specificity of `d_SQ(M, μ)`): if every separation achievable by `ans` is also
 achievable by `ans'`, then `sqDim …ans ≤ sqDim …ans'`. A distribution-specific answer functional
 (fewer queries) never has larger statistical dimension than a distribution-free one that can realize
@@ -128,6 +117,7 @@ theorem sqDim_mono_queries {Q' : Type*} (M : Finset ι) (τ : ℝ)
   obtain ⟨φ, hφ⟩ := hpair i hi j hj hij
   exact h i j φ hφ
 
+open scoped Classical in
 /-- The statistical dimension is **antitone in the tolerance**: a coarser separation threshold
 admits fewer separated subfamilies. If `τ₁ ≤ τ₂` then every `τ₂`-separated subfamily is already
 `τ₁`-separated (from `τ₁ ≤ τ₂ < |·|`), so the filtered powerset shrinks and its sup of cardinalities
@@ -171,7 +161,7 @@ of `V`: every `v ∈ V` lies within `2τ` of some `n ∈ N` on *every* query. In
 `2τ`-separated from all of `N`, then `insert v N` would be a larger `2τ`-separated subfamily of `V`,
 contradicting maximality — no transitivity is used, only closeness to a representative. The
 `v ∈ N` case (take `n := v`) needs `0 ≤ τ`. -/
-theorem sepNet_covers (M : Finset ι) (τ : ℝ) (ans : Q → ι → ℝ) (hτ : 0 ≤ τ)
+theorem sep_net_covers (M : Finset ι) (τ : ℝ) (ans : Q → ι → ℝ) (hτ : 0 ≤ τ)
     {V N : Finset ι} (hNV : N ⊆ V) (hVM : V ⊆ M)
     (hNsep : SepFam M (2 * τ) ans N)
     (hNmax : ∀ S, S ⊆ V → SepFam M (2 * τ) ans S → S.card ≤ N.card) :
@@ -231,17 +221,17 @@ version space `V ⊆ M` and `0 ≤ τ`, there is a net `N ⊆ V` of card `≤ sq
 retraction `ρ : ι → ι` sending every `v ∈ V` into `N` within `2τ` on every query. Crucially there
 is **no** pairwise-separation / identifiability hypothesis on `V`: `N` is a maximal `2τ`-separated
 subfamily (`exists_maximal_sepFam`), bounded by `sqDim` at threshold `2τ ≥ τ` via antitonicity
-(`sepFam_card_le_sqDim` + `sqDim_antitone_tol`), and covering by maximality (`sepNet_covers`).
+(`sepFam_card_le_sqDim` + `sqDim_antitone_tol`), and covering by maximality (`sep_net_covers`).
 Composed with `merge_answer_close` (masses merged onto `ρ`) this bounds the merged predictor's
-answer shift by `2τ`. This is the object [SQ] Thm 4.1 / Appendix A cites in place of
-`2τ`-identifiability: a learner-side net-and-merge available under Assumption A alone. -/
-theorem versionSpace_net_envelope (M : Finset ι) (τ : ℝ) (ans : Q → ι → ℝ) (hτ : 0 ≤ τ)
+answer shift by `2τ`. This is a learner-side net-and-merge, available under Assumption A alone,
+in place of `2τ`-identifiability. -/
+theorem version_space_net_envelope (M : Finset ι) (τ : ℝ) (ans : Q → ι → ℝ) (hτ : 0 ≤ τ)
     {V : Finset ι} (hVM : V ⊆ M) :
     ∃ (N : Finset ι) (ρ : ι → ι), N ⊆ V ∧ N.card ≤ sqDim M τ ans ∧
       (∀ v ∈ V, ρ v ∈ N) ∧ (∀ v ∈ V, ∀ φ, |ans φ v - ans φ (ρ v)| ≤ 2 * τ) := by
   classical
   obtain ⟨N, hNV, hNsep, hNmax⟩ := exists_maximal_sepFam M τ ans (V := V)
-  have hcov := sepNet_covers M τ ans hτ hNV hVM hNsep hNmax
+  have hcov := sep_net_covers M τ ans hτ hNV hVM hNsep hNmax
   have hcard : N.card ≤ sqDim M τ ans :=
     le_trans (sepFam_card_le_sqDim M (2 * τ) ans hNsep)
       (sqDim_antitone_tol M ans (by linarith))
@@ -253,20 +243,20 @@ theorem versionSpace_net_envelope (M : Finset ι) (τ : ℝ) (ans : Q → ι →
     simp only [dite_eq_left hv]
     exact (hcov v hv).choose_spec.2 φ
 
-/-- The SQ oracle of §3.1 as an object: `answer` estimates the truth's query values within `τ`. -/
+/-- The SQ oracle as an object: `answer` estimates the truth's query values within `τ`. -/
 def IsSQOracle (answer truth : Q → ℝ) (τ : ℝ) : Prop := ∀ φ, |answer φ - truth φ| ≤ τ
 
-/-- Reusing `ParityCounterexample.PolyBounded` verbatim: if the GENUINE statistical dimension of a
+/-- Reusing `SQBounds.PolyBounded` verbatim: if the GENUINE statistical dimension of a
 family is polynomially bounded (Assumption A) and each survivor set is pairwise `τ`-separated, then
-the survivor count is `poly`. This is FV-A4's `candidates_polyBounded` instantiated with the
+the survivor count is `poly`. This is `SQBounds.candidates_polyBounded` instantiated with the
 `A = m = 1` envelope supplied by `survivors_card_le_sqDim`. -/
 theorem survivors_polyBounded_of_separated (τ : ℝ)
     (Mfam Vfam : ℝ → Finset ι) (ansfam : ℝ → Q → ι → ℝ)
     (hV : ∀ r, Vfam r ⊆ Mfam r)
     (hsep : ∀ r, ∀ i ∈ Vfam r, ∀ j ∈ Vfam r, i ≠ j → ∃ φ, Separates τ (ansfam r) φ i j)
-    (hpoly : ParityCounterexample.PolyBounded (fun r => (sqDim (Mfam r) τ (ansfam r) : ℝ))) :
-    ParityCounterexample.PolyBounded (fun r => ((Vfam r).card : ℝ)) := by
-  refine SQVersionSpace.candidates_polyBounded _ _ hpoly 1 1 (by norm_num) ?_ ?_
+    (hpoly : SQBounds.PolyBounded (fun r => (sqDim (Mfam r) τ (ansfam r) : ℝ))) :
+    SQBounds.PolyBounded (fun r => ((Vfam r).card : ℝ)) := by
+  refine SQBounds.candidates_polyBounded _ _ hpoly 1 1 (by norm_num) ?_ ?_
   · filter_upwards with r
     have hle := survivors_card_le_sqDim (Mfam r) τ (ansfam r) (hV r) (hsep r)
     have hcast : ((Vfam r).card : ℝ) ≤ (sqDim (Mfam r) τ (ansfam r) : ℝ) := by exact_mod_cast hle
@@ -365,9 +355,9 @@ theorem ansPar_eq (φ S : Finset (Fin n)) : ansPar φ S = if S = φ then 1 else 
     rw [hsum, inv_mul_cancel₀ (by positivity)]
   · rw [ite_eq_right h, sum_chi_mul_eq_zero φ S (Ne.symm h), mul_zero]
 
-/-- **Headline (§5)**: parity's statistical dimension is `≥ 2^n` for any `τ < 1` — the whole
+/-- **Headline**: parity's statistical dimension is `≥ 2^n` for any `τ < 1` — the whole
 `2^n`-element class `Finset.univ` is `τ`-separated (query `φ = S` gives `|ansPar S S − ansPar S T| =
-1`). Upgrades FV-A3's MODELED `d_SQ = 2^Ω(n)` premise to a theorem. -/
+1`). Turns the MODELED `d_SQ = 2^Ω(n)` premise into a theorem. -/
 theorem sqDim_parity_ge {τ : ℝ} (hτ : τ < 1) :
     2 ^ n ≤ sqDim (Finset.univ : Finset (Finset (Fin n))) τ ansPar := by
   have hsep : SepFam (Finset.univ : Finset (Finset (Fin n))) τ ansPar Finset.univ := by
@@ -378,14 +368,13 @@ theorem sqDim_parity_ge {τ : ℝ} (hτ : τ < 1) :
   have hle := sepFam_card_le_sqDim (Finset.univ : Finset (Finset (Fin n))) τ ansPar hsep
   rwa [Finset.card_univ, Fintype.card_finset, Fintype.card_fin] at hle
 
-/-- FV-A3 bridge: the GENUINE parity dimension dominates FV-A3's modeled exponential stand-in
-(`dSQ (log 2) n = exp(n·log 2) = 2^n`). Composed with `ParityCounterexample.dSQ_not_polyBounded`,
-this makes "`d_SQ = 2^Ω(n)` for parity" machine-checked rather than modeled. -/
+/-- Bridge: the GENUINE parity dimension dominates the modeled exponential stand-in
+(`dSQ (log 2) n = exp(n·log 2) = 2^n`). -/
 theorem parity_dSQ_ge_exp {τ : ℝ} (hτ : τ < 1) :
-    ParityCounterexample.dSQ (Real.log 2) (n : ℝ)
+    SQBounds.dSQ (Real.log 2) (n : ℝ)
       ≤ (sqDim (Finset.univ : Finset (Finset (Fin n))) τ ansPar : ℝ) := by
-  have hdeq : ParityCounterexample.dSQ (Real.log 2) (n : ℝ) = (2 : ℝ) ^ n := by
-    rw [ParityCounterexample.dSQ, ← Real.rpow_natCast (2 : ℝ) n,
+  have hdeq : SQBounds.dSQ (Real.log 2) (n : ℝ) = (2 : ℝ) ^ n := by
+    rw [SQBounds.dSQ, ← Real.rpow_natCast (2 : ℝ) n,
         Real.rpow_def_of_pos (by norm_num : (0:ℝ) < 2)]
   rw [hdeq]
   calc (2 : ℝ) ^ n = ((2 ^ n : ℕ) : ℝ) := by push_cast; ring

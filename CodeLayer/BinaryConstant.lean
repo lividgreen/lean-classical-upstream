@@ -1,22 +1,13 @@
-/-
-Copyright (c) 2026 Mykola Palamarchuk. All rights reserved.
-Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Mykola Palamarchuk
--/
 module
 
 public import Mathlib.Data.Nat.Size
 public import CodeLayer.AdditiveComplexity
 public import CodeLayer.Code.EvalLaws
 
--- Formal-check file, not Mathlib-destined: opt out of the house-style header linter.
-set_option linter.style.header false
-
 /-!
-# Length-efficient binary constant `bconst` (the gate for Prop 2.2)
+# Length-efficient binary constant `bconst`
 
-Provenance: [SQ] §2.2 (Prop 2.2, the `S_T ≤ r + O(log)` bound) and the two-machine-invariance
-model-bridge. Extends `CodeLayer/AdditiveComplexity.lean` (`E`, `elen`, `KE`).
+Extends `CodeLayer/AdditiveComplexity.lean` (`E`, `elen`, `KE`).
 
 Status: **PROVED**. `eval_bconst` and `elen_bconst_le` (with `κ = 15 + elen dbl`) are proved and
 CI-guarded in `CodeLayer/AxiomAudit.lean`; both depend only on `[propext, Classical.choice,
@@ -25,9 +16,9 @@ Quot.sound]` (`Classical.choice` genuinely used — `dbl` is extracted from univ
 ## Why a new constant (the gate)
 `AdditiveComplexity` documents that Mathlib's `Code.const` is a **unary tower**
 (`const (n+1) = comp succ (const n)`), so `elen (Code.const n) = Θ(n)` — exponential in bit-length.
-Both Prop 2.2's `O(log T)` and the invariance bound `KE(x) ≤ K_d(x) + c_d` need a constant whose
-additive length is `O(Nat.size n)` (linear in *bits*). `bconst` builds `n` in Horner (binary)
-form: a fixed
+Both the `O(log T)` bound of the time-bounded description and the invariance bound
+`KE(x) ≤ K_d(x) + c_d` need a constant whose additive length is `O(Nat.size n)` (linear in *bits*).
+`bconst` builds `n` in Horner (binary) form: a fixed
 doubling code `dbl` (`x ↦ 2x`, via universality) plus one `succ`/`id` per bit, so the AST has
 `O(Nat.size n)` nodes.
 
@@ -116,9 +107,9 @@ theorem elen_bconst_le (n : ℕ) :
     -- omega abstracts the nonlinear `κ · size((n+1)/2)` (shared with `ih`) and closes
     omega
 
-/-! ## Payoffs: Prop 2.2 (time-bounded `|P|` bound) and multiplicative optimality -/
+/-! ## Payoffs: a time-bounded description bound and multiplicative optimality -/
 
-/-- **[SQ] Prop 2.2 (`|P|`-component)**: the length-`n` trajectory `y` produced within budget
+/-- **Time-bounded description bound**: the length-`n` trajectory `y` produced within budget
 `T` by `comp coll (comp cR (bconst n))` (rule code `cR`, `elen cR = r`; collector `coll`) has
 time-bounded additive complexity `S_T ≤ r + O(log n)`. The `O(log n)` is `κ · Nat.size n`
 (`κ = 15 + elen dbl`) — logarithmic in the horizon because `bconst` is binary, not the `Θ(n)` of

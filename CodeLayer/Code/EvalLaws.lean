@@ -1,8 +1,3 @@
-/-
-Copyright (c) 2026 Mykola Palamarchuk. All rights reserved.
-Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Mykola Palamarchuk
--/
 module
 
 public import Mathlib.Computability.PartrecCode
@@ -21,11 +16,15 @@ This module states those four, once.
 * `eval_pair_bind` — pairing in `bind`/`map` form. Upstream's clause is written with `<*>`, which
   does not meet a `bind`-shaped goal.
 
-The module is deliberately a leaf: it knows codes and their evaluation, and nothing about the
+It also holds the output-from-nothing convention shared by the complexity measures built on codes:
+`KolmogorovComplexity.Computes` (a code computes `x` when it outputs `x` on input `0`) and
+`KolmogorovComplexity.const_computes`.
+
+The module stays deliberately light: it knows codes and their evaluation, and nothing about the
 step-counting cost model built on top of them.
 -/
 
--- "deliberately a leaf: … nothing about the step-counting cost model"
+-- "deliberately light: … nothing about the step-counting cost model"
 
 @[expose] public section
 
@@ -57,3 +56,16 @@ theorem eval_pair_bind (cf cg : Code) (n : ℕ) :
   simp [eval, Seq.seq]
 
 end CodeEvalLaws
+
+namespace KolmogorovComplexity
+
+open Nat.Partrec Nat.Partrec.Code
+
+/-- `c` computes `x`, output-from-nothing convention: run on input `0`. -/
+def Computes (c : Code) (x : ℕ) : Prop := c.eval 0 = Part.some x
+
+/-- The constant code outputs `x` from any input. -/
+theorem const_computes (x : ℕ) : Computes (Code.const x) x := by
+  simp [Computes, eval_const]
+
+end KolmogorovComplexity

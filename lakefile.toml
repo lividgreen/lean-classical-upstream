@@ -1,22 +1,24 @@
 name = "classical_upstream"
-version = "0.2.0"
+version = "0.3.0"
 keywords = ["math", "algorithmic-information-theory", "learning-theory", "ergodic-theory", "realizability"]
 
 [leanOptions]
 pp.unicode.fun = true # pretty-prints `fun a ↦ b`
+autoImplicit = false
 relaxedAutoImplicit = false
 weak.linter.mathlibStandardSet = true
+weak.linter.style.header = false
 maxSynthPendingDepth = 3
 
 [[require]]
 name = "mathlib"
 scope = "leanprover-community"
-rev = "v4.34.0"
+rev = "v4.35.0"
 
 [[require]]
 name = "Foundation"
 git = "https://github.com/FormalizedFormalLogic/Foundation"
-rev = "c8d29fd50014c2a7cd0f3739e4678b0bb353235c"
+rev = "c3eb37ae896dc8f1d239ba1511e74d9f25e9d158"
 
 [[lean_lib]]
 name = "CodeLayer"

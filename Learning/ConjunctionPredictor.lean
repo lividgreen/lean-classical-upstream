@@ -1,55 +1,49 @@
-/-
-Copyright (c) 2026 Mykola Palamarchuk. All rights reserved.
-Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Mykola Palamarchuk
--/
 module
 
 public import Learning.ConjunctionSolver
 
--- Formal-check file, not Mathlib-destined: opt out of the house-style linters.
-set_option linter.style.header false
-set_option linter.style.longLine false
 
 /-!
 # The version-space (forced-symbol) predictor for conjunctions
 
-Provenance: [SQ] §4's *General form* paragraph, read alongside Corollary 4.3(b)'s read-off for
-1-decision lists (`Learning/DecisionListPredictor.lean`): the two-consistency-call forced-symbol
-predictor is not special to decision lists — any class with a poly-time consistency solver
-(Hirsh–Mishra–Pitt 2004) supports it the same way. This module runs that argument over the
-conjunction decider (`Learning/ConjunctionSolver.lean`).
+The two-consistency-call forced-symbol predictor of `Learning/DecisionListPredictor.lean` is not
+special to decision lists — any class with a poly-time consistency solver (Hirsh–Mishra–Pitt 2004)
+supports it the same way. This module runs that argument over the conjunction decider
+(`Learning/ConjunctionSolver.lean`).
 
 Extends a solver instance by one candidate example (`mkEx`, `extInst`) and composes two decisions
 — `cConjSolve` run on the instance extended by the query point at each candidate label — into the
-forced-symbol verdict, exactly as [SQ] §4's read-off describes: append each candidate next-symbol
+forced-symbol verdict, exactly as the read-off describes: append each candidate next-symbol
 as a constraint; the symbol whose appended constraint leaves every consistent conjunction in
 agreement is the prediction.
 
-**Cheaper than the 1-DL case, structurally.** `Conj.evalConj`'s output is a bit BY CONSTRUCTION
-(`Conj.evalConj_le_one`), unlike a decision list's `evalDLn`, which can return an arbitrary label via
-`ruleL` and therefore needs `exists_relabel` to rule out a non-bit prediction at the query before the
-two-call classification is exact. No such gap exists here, so `conj_empty_iff` below is immediate
-from `evalConj`'s bit-ness and its label-invariance (`evalConj_mkEx_congr`) — no relabelling argument
-is ported. Likewise `cConjSolve`'s own output IS the consistency verdict (no separate "mask-emptiness
-scan" the way `OneDL.cSolve`'s mask needed one): Stage A of the 1-DL predictor (`cDecide`/`decideVal`)
-has no analogue here, since `Conj.conjDecideVal` already is the computed bit.
+**Cheaper than the 1-DL case, structurally.** `Conjunction.evalConj`'s output is a bit BY
+CONSTRUCTION
+(`Conjunction.evalConj_le_one`), unlike a decision list's `evalDLn`, which can return an arbitrary
+label via
+`ruleL` and therefore needs `exists_relabel` to rule out a non-bit prediction at the query before
+the two-call classification is exact. No such gap exists here, so `conj_empty_iff` below is
+immediate from `evalConj`'s bit-ness and its label-invariance (`evalConj_mkEx_congr`) — no
+relabelling argument is ported. Likewise `cConjSolve`'s own output IS the consistency verdict (no
+separate "mask-emptiness scan" the way `DecisionList.cSolve`'s mask needed one): Stage A of the 1-DL
+predictor (`cDecide`/`decideVal`)
+has no analogue here, since `Conjunction.conjDecideVal` already is the computed bit.
 
 Placed in its OWN module — mirroring `DecisionListSolver.lean`/`DecisionListPredictor.lean` — rather
 than as a section of `ConjunctionSolver.lean`, so the cross-module transfer is genuinely exercised:
-the whole classification below is built ONLY from `Conj`'s public API
+the whole classification below is built ONLY from `Conjunction`'s public API
 (`cConjSolve`/`val_cConjSolve`/`conj_decides`/`tc_cConjSolve_raw`/`PolyTimeOn`), with no Code-level
-`rfl` bridge across the module boundary — the measurement this target exists to make (see the
-`CLAUDE.md` T41 lesson: a private composition law forces an expensive re-derivation from the
-consumer side; here the composition law was public from the start).
+`rfl` bridge across the module boundary — the measurement this module exists to make (a private
+composition law forces an expensive re-derivation from the consumer side; here the composition law
+was public from the start).
 -/
 
 
 @[expose] public section
 
-namespace Conj
+namespace Conjunction
 
-open OneDL
+open BitGates DecisionList
 open Nat.Partrec (Code)
 open Nat.Partrec.Code
 open TimeCost
@@ -59,7 +53,8 @@ open TimeCost
 `mkEx b fv` packs a candidate example at feature vector `fv` with label `b`; `extInst` prepends it
 onto a solver instance's example list (a flag-cons cell, `O(1)` — prepend, not append, since
 `ConsistentConj` quantifies over membership and example order is immaterial). No mask to extend
-(unlike `OneDL`'s solver, `Conj`'s decider carries no working mask) and no separate "packed with
+(unlike `DecisionList`'s solver, `Conjunction`'s decider carries no working mask) and no separate
+"packed with
 mask" step: the extended CJ-C input is `extInst inst (mkEx b x)` itself. -/
 
 /-- An example with label `b` and feature vector `fv`. -/
@@ -69,8 +64,10 @@ def mkEx (b fv : ℕ) : ℕ := Nat.pair b fv
 def extInst (inst e : ℕ) : ℕ :=
   Nat.pair (readK inst) (Nat.pair (readM inst + 1) (Nat.pair 1 (Nat.pair e (readData inst))))
 
-private theorem lblOf_mkEx (b fv : ℕ) : lblOf (mkEx b fv) = b := by simp [mkEx, lblOf, Nat.unpair_pair]
-private theorem fvOf_mkEx (b fv : ℕ) : fvOf (mkEx b fv) = fv := by simp [mkEx, fvOf, Nat.unpair_pair]
+private theorem lblOf_mkEx (b fv : ℕ) : lblOf (mkEx b fv) = b := by
+    simp [mkEx, lblOf, Nat.unpair_pair]
+private theorem fvOf_mkEx (b fv : ℕ) : fvOf (mkEx b fv) = fv := by
+    simp [mkEx, fvOf, Nat.unpair_pair]
 
 private theorem readK_extInst (inst e : ℕ) : readK (extInst inst e) = readK inst := by
   simp [extInst, readK, Nat.unpair_pair]
@@ -128,7 +125,8 @@ private theorem wfbits_extInst (inst x b : ℕ) (hw : WFBits inst) (hb : b ≤ 1
     (exs : List ℕ) (hdeq : readData inst = encodeList exs) (hdlen : exs.length = readM inst) :
     WFBits (extInst inst (mkEx b x)) := by
   obtain ⟨hwfB, exsW, hdeqW, hdlenW, hlblW, hfeatW⟩ := hw
-  obtain ⟨hlbl, hfeat⟩ := wfbits_exs_bits inst ⟨hwfB, exsW, hdeqW, hdlenW, hlblW, hfeatW⟩ exs hdeq hdlen
+  obtain ⟨hlbl, hfeat⟩ := wfbits_exs_bits inst ⟨hwfB, exsW, hdeqW, hdlenW, hlblW, hfeatW⟩ exs hdeq
+      hdlen
   refine ⟨⟨?_, ?_, ?_⟩, mkEx b x :: exs, ?_, ?_, ?_, ?_⟩
   · rw [readM_extInst]; omega
   · rw [readData_extInst, hdeq, readM_extInst]
@@ -152,7 +150,8 @@ private theorem wfbits_extInst (inst x b : ℕ) (hw : WFBits inst) (hb : b ≤ 1
 /-! ## `Code` realisation: the extended instance, and two fresh `cConjSolve` calls
 
 `cX`/`cN` project the packed input `⟨inst, x⟩`; `cExtInstB b` builds `extInst inst (mkEx b x)` as a
-`Code`; `cD01` is the pair of extended decisions, `⟨inst,x⟩ ↦ ⟨dV inst x 0, dV inst x 1⟩`. -/
+`Code`; `cD01` is the pair of extended decisions, `conjDecideVal (extInst inst (mkEx b x))` at
+`b = 0` and `b = 1`. -/
 
 /-- The instance, `left` of the packed input `⟨inst, x⟩`. -/
 def cN : Code := left
@@ -207,7 +206,8 @@ def cLabelCore : Code := comp cAnd (pair cFlagCore cD1core)
 /-- The forced flag paired with the forced label, as a `Code`. -/
 def cForcedCore : Code := pair cFlagCore cLabelCore
 
-/-- **`cForced`**: the two-consistency-call forced-symbol predictor, on the packed input `⟨inst,x⟩`. -/
+/-- **`cForced`**: the two-consistency-call forced-symbol predictor, on the packed input
+`⟨inst,x⟩`. -/
 def cForced : Code := comp cForcedCore cD01
 
 /-- `forcedVal inst x`: `⟨1, b⟩` when exactly one of the two extended decisions succeeds (`b` its
@@ -247,7 +247,7 @@ theorem evalConj_mkEx_congr (lits : List ℕ) (b1 b2 x : ℕ) :
 
 /-- **A single extended decision, unfolded.** `conjDecideVal` at the instance extended by `⟨b,x⟩`
 is nonzero iff some valid literal set, consistent with `exs`, has the query evaluate to `b`. -/
-theorem dV_iff (inst x b : ℕ) (hw : WFBits inst) (hb : b ≤ 1)
+theorem decide_extInst_iff (inst x b : ℕ) (hw : WFBits inst) (hb : b ≤ 1)
     (hqx : IsList x (readK inst)) (hqbits : ∀ j, headL (peel x j) ≤ 1)
     (exs : List ℕ) (hdeq : readData inst = encodeList exs) (hdlen : exs.length = readM inst) :
     conjDecideVal (extInst inst (mkEx b x)) ≠ 0 ↔
@@ -279,7 +279,7 @@ theorem dV_iff (inst x b : ℕ) (hw : WFBits inst) (hb : b ≤ 1)
 
 /-! ### The classification
 
-Both `conj_empty_iff` and `forced_core` below skip `OneDL`'s `exists_relabel` step entirely:
+Both `conj_empty_iff` and `forced_core` below skip `DecisionList`'s `exists_relabel` step entirely:
 `evalConj`'s value is a bit BY CONSTRUCTION (`evalConj_le_one`), so "the query's predicted value" is
 always `0` or `1` — there is no non-bit prediction case to exclude before the two-call read-off is
 exact. -/
@@ -297,19 +297,21 @@ theorem conj_empty_iff (inst x : ℕ) (hw : WFBits inst)
   · rintro ⟨h0, h1⟩ ⟨lits, hval, hcons⟩
     have hωle : evalConj lits (mkEx 0 x) ≤ 1 := evalConj_le_one lits (mkEx 0 x)
     rcases (by omega : evalConj lits (mkEx 0 x) = 0 ∨ evalConj lits (mkEx 0 x) = 1) with hω0 | hω1
-    · exact ((dV_iff inst x 0 hw (by omega) hqx hqbits exs hdeq hdlen).mpr
+    · exact ((decide_extInst_iff inst x 0 hw (by omega) hqx hqbits exs hdeq hdlen).mpr
         ⟨lits, hval, hω0, hcons⟩) h0
     · have hev1 : evalConj lits (mkEx 1 x) = 1 := by
         rw [evalConj_mkEx_congr lits 1 0 x]; exact hω1
-      exact ((dV_iff inst x 1 hw (by omega) hqx hqbits exs hdeq hdlen).mpr
+      exact ((decide_extInst_iff inst x 1 hw (by omega) hqx hqbits exs hdeq hdlen).mpr
         ⟨lits, hval, hev1, hcons⟩) h1
   · intro hncons
     refine ⟨?_, ?_⟩
     · by_contra h0
-      obtain ⟨lits, hval, _, hcons⟩ := (dV_iff inst x 0 hw (by omega) hqx hqbits exs hdeq hdlen).mp h0
+      obtain ⟨lits, hval, _, hcons⟩ :=
+        (decide_extInst_iff inst x 0 hw (by omega) hqx hqbits exs hdeq hdlen).mp h0
       exact hncons ⟨lits, hval, hcons⟩
     · by_contra h1
-      obtain ⟨lits, hval, _, hcons⟩ := (dV_iff inst x 1 hw (by omega) hqx hqbits exs hdeq hdlen).mp h1
+      obtain ⟨lits, hval, _, hcons⟩ :=
+        (decide_extInst_iff inst x 1 hw (by omega) hqx hqbits exs hdeq hdlen).mp h1
       exact hncons ⟨lits, hval, hcons⟩
 
 /-- From "`b`'s extended call succeeds and the other fails", the classification's content: the truth
@@ -325,7 +327,7 @@ private theorem forced_core (inst x b : ℕ) (hw : WFBits inst) (hb : b ≤ 1)
       ∀ lits, (∀ r ∈ lits, litJ r < readK inst) → ConsistentConj lits exs →
         evalConj lits (mkEx 0 x) = b := by
   obtain ⟨lits, hval, hev, hcons⟩ :=
-    (dV_iff inst x b hw hb hqx hqbits exs hdeq hdlen).mp hbforced
+    (decide_extInst_iff inst x b hw hb hqx hqbits exs hdeq hdlen).mp hbforced
   refine ⟨⟨lits, hval, hcons⟩, ?_⟩
   intro lits' hval' hcons'
   by_contra hne
@@ -334,7 +336,8 @@ private theorem forced_core (inst x b : ℕ) (hw : WFBits inst) (hb : b ≤ 1)
   have hev' : evalConj lits' (mkEx (1 - b) x) = 1 - b := by
     rw [evalConj_mkEx_congr lits' (1 - b) 0 x]; exact hcase
   have hother : conjDecideVal (extInst inst (mkEx (1 - b) x)) ≠ 0 :=
-    (dV_iff inst x (1 - b) hw (by omega) hqx hqbits exs hdeq hdlen).mpr ⟨lits', hval', hev', hcons'⟩
+    (decide_extInst_iff inst x (1 - b) hw (by omega) hqx hqbits exs hdeq hdlen).mpr
+      ⟨lits', hval', hev', hcons'⟩
   exact hother hobforced
 
 /-- The converse direction's content: unanimity forces both extended calls to their expected
@@ -352,11 +355,11 @@ private theorem forced_of_unanimous (inst x b : ℕ) (hw : WFBits inst) (hb : b 
   have hevb : evalConj lits (mkEx b x) = b := by
     rw [evalConj_mkEx_congr lits b 0 x]; exact hev0
   have hbforced : conjDecideVal (extInst inst (mkEx b x)) ≠ 0 :=
-    (dV_iff inst x b hw hb hqx hqbits exs hdeq hdlen).mpr ⟨lits, hval, hevb, hconsD⟩
+    (decide_extInst_iff inst x b hw hb hqx hqbits exs hdeq hdlen).mpr ⟨lits, hval, hevb, hconsD⟩
   refine ⟨hbforced, ?_⟩
   by_contra hobforced
   obtain ⟨lits'', hval'', hev'', hcons''⟩ :=
-    (dV_iff inst x (1 - b) hw (by omega) hqx hqbits exs hdeq hdlen).mp hobforced
+    (decide_extInst_iff inst x (1 - b) hw (by omega) hqx hqbits exs hdeq hdlen).mp hobforced
   have hev0' : evalConj lits'' (mkEx 0 x) = 1 - b := by
     rw [evalConj_mkEx_congr lits'' 0 (1 - b) x]; exact hev''
   have := hunanim lits'' hval'' hcons''
@@ -446,8 +449,8 @@ theorem conj_split_iff (inst x : ℕ) (hw : WFBits inst)
         (∀ r ∈ lits1, litJ r < readK inst) ∧ ConsistentConj lits1 exs ∧
         evalConj lits0 (mkEx 0 x) = 0 ∧ evalConj lits1 (mkEx 0 x) = 1 := by
   unfold d0V d1V
-  rw [dV_iff inst x 0 hw (by omega) hqx hqbits exs hdeq hdlen,
-    dV_iff inst x 1 hw (by omega) hqx hqbits exs hdeq hdlen]
+  rw [decide_extInst_iff inst x 0 hw (by omega) hqx hqbits exs hdeq hdlen,
+    decide_extInst_iff inst x 1 hw (by omega) hqx hqbits exs hdeq hdlen]
   constructor
   · rintro ⟨⟨lits0, hval0, hev0, hcons0⟩, ⟨lits1, hval1, hev1, hcons1⟩⟩
     refine ⟨lits0, lits1, hval0, hcons0, hval1, hcons1, hev0, ?_⟩
@@ -480,7 +483,8 @@ private theorem tc_cMkExB_le (b n x : ℕ) (hb : b ≤ 1) : tc (cMkExB b) (Nat.p
   have h2 := tc_cX_le n x
   simp only [cMkExB, tc_pair]
   omega
-private theorem tc_cExtInstB_le (b n x : ℕ) (hb : b ≤ 1) : tc (cExtInstB b) (Nat.pair n x) ≤ 60 := by
+private theorem tc_cExtInstB_le (b n x : ℕ) (hb : b ≤ 1) : tc (cExtInstB b) (Nat.pair n x) ≤ 60 :=
+    by
   have h1 := tc_cReadKP_le n x
   have h2 := tc_cReadMP_le n x
   have h3 : tc succ (val cReadMP (Nat.pair n x)) ≤ 1 := by simp
@@ -605,7 +609,7 @@ def ForcedWF (p : ℕ) : Prop :=
 set_option maxRecDepth 4000 in
 /-- **`polyTime_forced`.** The two-consistency-call forced-symbol predictor is poly-time on the
 well-formed domain: `cForced` computes it, its native cost is `PolyBoundedOn` (via `tc_forced_raw`
-and `polyTime_conjSolve`'s own poly-bit closure applied twice), and its output is a bit pair,
+and `polyTime_conj_solve`'s own poly-bit closure applied twice), and its output is a bit pair,
 hence trivially poly-bit. -/
 theorem polyTime_forced : PolyTimeOn ForcedWF (fun p => forcedVal p.unpair.1 p.unpair.2) := by
   refine ⟨cForced, rfindFree_cForced, fun p _ => ?_, ?_, ?_⟩
@@ -670,28 +674,30 @@ theorem polyTime_forced : PolyTimeOn ForcedWF (fun p => forcedVal p.unpair.1 p.u
 Each guard **fails `lake build`** if the theorem's axiom set ever drifts from the standard
 `[propext, Classical.choice, Quot.sound]`. -/
 
-/-- info: 'Conj.dV_iff' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Conjunction.decide_extInst_iff' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs (whitespace := lax) in
-#print axioms dV_iff
+#print axioms decide_extInst_iff
 
-/-- info: 'Conj.conj_empty_iff' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Conjunction.conj_empty_iff' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs (whitespace := lax) in
 #print axioms conj_empty_iff
 
-/-- info: 'Conj.conj_forced_iff' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+set_option linter.style.longLine false in
+/-- info: 'Conjunction.conj_forced_iff' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs (whitespace := lax) in
 #print axioms conj_forced_iff
 
-/-- info: 'Conj.conj_split_iff' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Conjunction.conj_split_iff' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs (whitespace := lax) in
 #print axioms conj_split_iff
 
-/-- info: 'Conj.tc_forced_raw' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'Conjunction.tc_forced_raw' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs (whitespace := lax) in
 #print axioms tc_forced_raw
 
-/-- info: 'Conj.polyTime_forced' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+set_option linter.style.longLine false in
+/-- info: 'Conjunction.polyTime_forced' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs (whitespace := lax) in
 #print axioms polyTime_forced
 
-end Conj
+end Conjunction

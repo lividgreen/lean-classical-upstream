@@ -1,20 +1,12 @@
-/-
-Copyright (c) 2026 Mykola Palamarchuk. All rights reserved.
-Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Mykola Palamarchuk
--/
 module
 
 public import AIT.CodingTheoremWeak
-public import CodeLayer.BitStringPrimrec
-
--- Formal-check file, not Mathlib-destined: opt out of the house-style header linter.
-set_option linter.style.header false
+public import AIT.PrefixMachinePrimrec
 
 /-!
-# The online Kraft–Chaitin assignment ([Discovery] §1.1, FV-21)
+# The online Kraft–Chaitin assignment
 
-Provenance: [Discovery] §1.1 and FV-21, over the fixed-width code `PrefixMachine.bitsFixed` of
+Over the fixed-width code `PrefixMachine.bitsFixed` of
 `AIT/CodingTheoremWeak.lean` and the bit-string computability layer of
 `CodeLayer/BitStringPrimrec.lean`.
 
@@ -411,16 +403,16 @@ private theorem bestFreePair_none {free : FreeSpace} {k : ℕ} (h : bestFreePair
 private theorem primrecRel_fst_eq : PrimrecRel fun (p : ℕ × ℕ) (n : ℕ) => p.1 = n :=
   ⟨inferInstance, Primrec.eq.decide.comp (Primrec.fst.comp Primrec.fst) Primrec.snd⟩
 
-private theorem primrec₂_filterLen : Primrec₂ fun (free : FreeSpace) (n : ℕ) =>
+private theorem primrec₂_filter_len : Primrec₂ fun (free : FreeSpace) (n : ℕ) =>
     (free.filter (fun p => p.1 = n)).head? :=
   Primrec.list_head?.comp₂ (PrimrecRel.listFilter primrecRel_fst_eq)
 
 private theorem primrec₂_bestFreePair : Primrec₂ bestFreePair := by
   have hbase : Primrec fun free : FreeSpace => (free.filter (fun p => p.1 = 0)).head? :=
-    primrec₂_filterLen.comp Primrec.id (Primrec.const 0)
+    primrec₂_filter_len.comp Primrec.id (Primrec.const 0)
   have hfiltSucc : Primrec₂ fun (free : FreeSpace) (n : ℕ) =>
       (free.filter (fun p => p.1 = n + 1)).head? :=
-    primrec₂_filterLen.comp₂ Primrec₂.left (Primrec.succ.comp₂ Primrec₂.right)
+    primrec₂_filter_len.comp₂ Primrec₂.left (Primrec.succ.comp₂ Primrec₂.right)
   have hg : Primrec₂ fun (free : FreeSpace) (nr : ℕ × Option (ℕ × ℕ)) =>
       (match (free.filter (fun p => p.1 = nr.1 + 1)).head? with
         | some p => some p

@@ -1,19 +1,11 @@
-/-
-Copyright (c) 2026 Mykola Palamarchuk. All rights reserved.
-Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Mykola Palamarchuk
--/
 module
 
 public import AIT.PrefixMachine
 
--- Formal-check file, not Mathlib-destined: opt out of the house-style header linter.
-set_option linter.style.header false
-
 /-!
-# The algorithmic probability on the universal prefix machine ([Discovery] §1.1, FV-21)
+# The algorithmic probability on the universal prefix machine
 
-Provenance: [Discovery] §1.1 and FV-21, over the universal prefix machine `PrefixMachine.KB`.
+Over the universal prefix machine `PrefixMachine.KB`.
 Extends `AIT/PrefixMachine.lean` (`pfy`, `KB`, `kbWeight`, `kraft_KB`).
 
 ## What this establishes
@@ -67,7 +59,7 @@ open scoped Classical in
 /-- The shortest description is one term of the sum. -/
 theorem two_pow_neg_KB_le_QB (x : ℕ) : (1 / 2 : ℝ) ^ KB x ≤ QB x := by
   set cp₀ : Code × List Bool := (minDescCode x, minDescArg x) with hcp₀
-  have hspec := minDesc_spec x
+  have hspec := min_desc_spec x
   have hmemS : minDescArg x ∈ natToBits '' (pfy (minDescCode x)).Dom :=
     ⟨bitsToNat (minDescArg x), Part.dom_iff_mem.mpr ⟨x, hspec.1⟩, natToBits_bitsToNat _⟩
   have hterm :

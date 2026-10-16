@@ -1,20 +1,11 @@
-/-
-Copyright (c) 2026 Mykola Palamarchuk. All rights reserved.
-Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Mykola Palamarchuk
--/
 module
 
 public import ErgodicTheory.LocalRuleColumns
 public import Mathlib.Data.Nat.Choose.Lucas
 public import Mathlib.Data.Nat.Bitwise
 
--- Formal-check file, not Mathlib-destined: opt out of the house-style header linter.
-set_option linter.style.header false
-
 /-!
 # Rule `90` from the single seed is Pascal's triangle modulo two
-([RuleSpace] §7 "Columns and rays"; [RuleSpace] §5 Proposition 5.1)
 
 Rule `90` from the single seed `Pi.single 0 1` is Pascal's triangle modulo two (Wolfram 1983):
 at step `a + b` and cell `a - b` the orbit reads the binomial coefficient `(a + b).choose a`
@@ -31,6 +22,12 @@ coefficient into a digit criterion: it is odd exactly when `a` and `b` share no 
 * `choose_add_mod_two_eq_one_iff` — **Lucas's theorem at the prime two**: `(a + b).choose a` is
   odd iff `a &&& b = 0`, by Lucas's congruence on the lowest binary digit and induction on the
   remaining digits.
+* `choose_three_mul_mod_two_eq_one_iff` — the same criterion at `a = m`, `b = 2 m`: `C(3 m, m)` is
+  odd iff `m &&& (2 * m) = 0`.
+* `and_two_mul_eq_zero_iff` — `m` and `2 m` share no binary digit iff `m` has no two adjacent binary
+  ones. Together with the previous statement this is the comment of the OEIS's entry A003714: the
+  numbers with no two adjacent binary ones are exactly the `m` with `C(3 m, m)` odd, a consequence
+  of Lucas's theorem at the prime two.
 * `step_rule90_single_eq_one_iff` — the two combined: at step `a + b` and cell `a - b` the orbit
   of the single seed reads `1` iff `a &&& b = 0`.
 -/
@@ -120,6 +117,34 @@ theorem choose_add_mod_two_eq_one_iff :
     simp only [Nat.choose_zero_succ, zero_mul, Nat.zero_mod, zero_ne_one, false_iff]
     omega
 
+/-- The binomial coefficient `C(3 m, m)` is odd exactly when `m` and `2 m` share no binary digit. -/
+theorem choose_three_mul_mod_two_eq_one_iff (m : ℕ) :
+    Nat.choose (3 * m) m % 2 = 1 ↔ m &&& (2 * m) = 0 := by
+  have h := choose_add_mod_two_eq_one_iff m (2 * m)
+  rwa [show m + 2 * m = 3 * m by omega] at h
+
+/-- `m` and `2 m` share no binary digit exactly when `m` has no two adjacent binary ones. -/
+theorem and_two_mul_eq_zero_iff (m : ℕ) :
+    m &&& (2 * m) = 0 ↔ ∀ i : ℕ, ¬ (m.testBit i = true ∧ m.testBit (i + 1) = true) := by
+  have hshift : ∀ i : ℕ, (2 * m).testBit (i + 1) = m.testBit i := by
+    intro i
+    rw [Nat.testBit_succ, show 2 * m / 2 = m by omega]
+  constructor
+  · intro h i hi
+    have h1 : (m &&& (2 * m)).testBit (i + 1) = (0 : ℕ).testBit (i + 1) := by rw [h]
+    rw [Nat.testBit_and, hshift, Nat.zero_testBit, hi.1, hi.2] at h1
+    simp at h1
+  · intro h
+    apply Nat.eq_of_testBit_eq
+    intro j
+    rw [Nat.testBit_and, Nat.zero_testBit]
+    cases j with
+    | zero => simp [Nat.testBit_zero]
+    | succ i =>
+        rw [hshift]
+        have hi := h i
+        cases hmi : m.testBit i <;> cases hmj : m.testBit (i + 1) <;> simp_all
+
 /-! ## The cells of the orbit -/
 
 /-- **Parity**: the orbit of the single seed under rule `90` reads `0` where step plus cell is
@@ -153,7 +178,7 @@ theorem step_rule90_single_eq_zero_of_lt_abs (t : ℕ) (i : ℤ) (h : (t : ℤ) 
 
 /-! ## Pascal's triangle modulo two -/
 
-/-- **Pascal's triangle modulo two** (Wolfram 1983; [RuleSpace] §7 "Columns and rays"): rule `90`
+/-- **Pascal's triangle modulo two** (Wolfram 1983): rule `90`
 from the single seed reads `(a + b).choose a`, reduced modulo two, at cell `a - b` and step
 `a + b`. The Pascal recurrence `(n + 1).choose (k + 1) = n.choose k + n.choose (k + 1)` is rule
 `90`'s own step; the two edges `b = 0` and `a = 0` read the light cone's live boundary. -/

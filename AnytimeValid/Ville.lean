@@ -1,16 +1,22 @@
-/-
-Copyright (c) 2026 Mykola Palamarchuk. All rights reserved.
-Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Mykola Palamarchuk
--/
 module
 
 public import Mathlib.Probability.Martingale.OptionalStopping
 
--- Ville's inequality for non-negative supermartingales (FV-G hardening; a genuine Mathlib gap).
--- Complete proofs, no `sorry`; wired into AnytimeValid.lean and axiom-guarded in AxiomAudit.lean.
-set_option linter.style.header false
+/-!
+# Ville's inequality
 
+Ville's maximal inequality for a non-negative supermartingale `Z` on a finite measure space:
+for `lam > 0`, the probability that `Z` ever reaches `lam` is at most `𝔼[Z 0] / lam`.
+Mathlib has no statement of this inequality, so the module
+proves it from optional stopping at the capped hitting time, then lets the horizon tend to
+infinity.
+
+## Main results
+
+* `Ville.ville_inequality`: the inequality, for a non-negative supermartingale.
+* `Ville.ville_potential_budget`: the case `lam = 1/δ` with `𝔼[Z 0] ≤ 1`, bounding the
+  probability of ever reaching `1/δ` by `δ`.
+-/
 
 @[expose] public section
 
@@ -101,10 +107,9 @@ theorem ville_inequality [IsFiniteMeasure μ]
   rw [← hunion]
   exact le_of_tendsto (tendsto_measure_iUnion_atTop hmono) (Eventually.of_forall hfin)
 
-/-- FV-G potential budget: Ville's inequality at `λ = 1/δ` for a non-negative supermartingale with
-`𝔼[Z 0] ≤ 1` gives `μ{∃ n, 1/δ ≤ Z n} ≤ δ`. This is the excursion budget of Appendix A Claim 2's
-search phase: the total measure of paths whose log-Bayes potential ever exceeds the `1/δ` threshold
-is at most `δ`. -/
+/-- Potential budget: Ville's inequality at `λ = 1/δ` for a non-negative supermartingale with
+`𝔼[Z 0] ≤ 1` gives `μ{∃ n, 1/δ ≤ Z n} ≤ δ`: the total measure of paths on which the process ever
+exceeds the `1/δ` threshold is at most `δ`. -/
 theorem ville_potential_budget [IsFiniteMeasure μ]
     (Z : ℕ → Ω → ℝ) (hsuper : Supermartingale Z ℱ μ) (hnn : ∀ n ω, 0 ≤ Z n ω)
     (hZ0 : μ[Z 0] ≤ 1) (δ : ℝ) (hδ0 : 0 < δ) :

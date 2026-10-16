@@ -1,15 +1,7 @@
-/-
-Copyright (c) 2026 Mykola Palamarchuk. All rights reserved.
-Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Mykola Palamarchuk
--/
 module
 
 public import Mathlib.InformationTheory.Coding.KraftMcMillan
 public import Mathlib.Topology.Algebra.InfiniteSum.Real
-
--- Formal-check file, not Mathlib-destined: opt out of the house-style header linter.
-set_option linter.style.header false
 
 /-!
 # Binary Kraft–McMillan bridges
@@ -20,20 +12,20 @@ uniquely-decodable code over a finite alphabet, as a statement about `Fintype.ca
 minus the codeword lengths.  Every use of it in this development wants one of two things instead:
 the *binary* form `∑ (1/2)^|w| ≤ 1`, and the sum taken over an *index type* — a hypothesis class,
 a type of programs — rather than over the codewords themselves.  This module is that adapter, and
-it is deliberately a leaf: it imports only Mathlib, so both the universal-prior side ([Discovery]
-§1.1) and the program-length side (the additive complexity `KE`) can use it without either
+it stays deliberately light: it imports only Mathlib, so both the universal-prior side and the
+program-length side (the additive complexity `KE`) can use it without either
 importing the other for a generic list lemma.
 
 ## Contents
 
-* `uniquelyDecodable_of_subset` — unique decodability passes to subsets (absent upstream: the
+* `isUniquelyDecodable_of_subset` — unique decodability passes to subsets (absent upstream: the
   `UniquelyDecodable.lean` file has only `epsilon_not_mem` / `flatten_injective`).
 * `finset_sum_le_one` — the binary (`α = Bool`) specialization of Kraft–McMillan, over a finite
   set of codewords.
 * `indexed_finset_sum_le_one` — the same bound with the sum reindexed along an injective code
   `code : ι → List Bool`, over any finite set of indices.  Injectivity is what lets the sum move
   from codewords to indices; unique decodability of the *whole* range is what lets an arbitrary
-  finite subset inherit Kraft (via `uniquelyDecodable_of_subset`).
+  finite subset inherit Kraft (via `isUniquelyDecodable_of_subset`).
 * `indexed_tsum_le_one` — the countable extension: every finite subtotal is `≤ 1` and the summands
   are nonnegative, so the sum over all of `ι` is `≤ 1`.  This is the form both callers want — a
   sub-probability over an index type.
@@ -44,10 +36,10 @@ These are *code-length* statements throughout.  Nothing here claims that shortes
 minimal descriptions, form a uniquely-decodable set — that a code exists with lengths `= K(·)` is
 a separate fact, supplied by the caller (a concrete serialization proved uniquely decodable, or an
 explicit hypothesis).  The bound is `≤ 1`, not `= 1`: a uniquely-decodable code need not be
-complete, and sub-normalization is what the `∝ 2^{−K}` prior of [Discovery] §1.1 needs.
+complete, and sub-normalization is what the `∝ 2^{−K}` prior needs.
 -/
 
--- "it is deliberately a leaf: it imports only Mathlib, so both the universal-prior side and the
+-- "it stays deliberately light: it imports only Mathlib, so both the universal-prior side and the
 -- program-length side can use it without either importing the other": neither consumer is in scope.
 
 @[expose] public section
@@ -61,7 +53,7 @@ open InformationTheory
 
 /-- A subset of a uniquely-decodable code is uniquely decodable.  The unique-decodability test on
 `S` only ever quantifies over codewords that lie in `S ⊆ T`, so it is inherited from `T`. -/
-theorem uniquelyDecodable_of_subset {α : Type*} {S T : Set (List α)}
+theorem isUniquelyDecodable_of_subset {α : Type*} {S T : Set (List α)}
     (hsub : S ⊆ T) (h : IsUniquelyDecodable T) : IsUniquelyDecodable S :=
   fun L₁ L₂ h1 h2 hflat =>
     h L₁ L₂ (fun w hw => hsub (h1 w hw)) (fun w hw => hsub (h2 w hw)) hflat
@@ -77,7 +69,7 @@ theorem finset_sum_le_one {S : Finset (List Bool)}
 /-- **Binary Kraft–McMillan, reindexed along an injective code.**  For `code : ι → List Bool`
 injective with uniquely-decodable range, any finite set of indices carries total weight `≤ 1`.
 
-The finite image is uniquely decodable because the whole range is (`uniquelyDecodable_of_subset`),
+The finite image is uniquely decodable because the whole range is (`isUniquelyDecodable_of_subset`),
 and injectivity of `code` transports the sum from the codewords back to the indices. -/
 theorem indexed_finset_sum_le_one {ι : Type*} (code : ι → List Bool)
     (hinj : Function.Injective code) (hUD : IsUniquelyDecodable (Set.range code))
@@ -89,7 +81,7 @@ theorem indexed_finset_sum_le_one {ι : Type*} (code : ι → List Bool)
     simp only [Finset.coe_image, Set.mem_image, Finset.mem_coe] at hw
     obtain ⟨i, _, rfl⟩ := hw
     exact Set.mem_range_self i
-  have h := finset_sum_le_one (uniquelyDecodable_of_subset hsub hUD)
+  have h := finset_sum_le_one (isUniquelyDecodable_of_subset hsub hUD)
   rwa [Finset.sum_image (fun a _ b _ hab => hinj hab)] at h
 
 /-- **Binary Kraft–McMillan over the whole index type.**  For an injective code with

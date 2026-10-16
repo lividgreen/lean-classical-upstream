@@ -1,43 +1,33 @@
-/-
-Copyright (c) 2026 Mykola Palamarchuk. All rights reserved.
-Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Mykola Palamarchuk
--/
 module
 
 public import Mathlib.Computability.PartrecCode
 
--- Formal-check file, not Mathlib-destined: opt out of the house-style linters.
-set_option linter.style.header false
-set_option linter.style.longLine false
 
 /-!
 # A native sequential-time cost on the rfind'-free fragment of `Nat.Partrec.Code`
 
-The root of the native cost model. Companion to `ALT/Collector.lean` (in the companion library
-`lean-algorithmic-learning-theory`), whose `prop_2_2_t_exists` is the honest ∃-budget fallback
-forced by the `evaln` value-cap wall; this file supplies the magnitude-INDEPENDENT step count that
-discharges that wall for the collector.
+The root of the native cost model: a magnitude-INDEPENDENT step count, in place of the value-capped
+`evaln` fuel (the wall described below).
 
 ## The wall this routes around
 Mathlib's clocked evaluator `Nat.Partrec.Code.evaln : ℕ → Code → ℕ → Option ℕ` caps intermediate
 VALUES (`evaln_bound : x ∈ evaln k c n → n < k`), so its fuel `k` is a value ceiling, not a faithful
-sequential-time measure: the `collector` runs in linearly-many `prec` unfoldings, yet its accumulator
-`orbitAcc rs n` grows super-exponentially, so NO polynomial `evaln` budget exists. We want a cost that
-charges each `prec`/`comp` unfolding `O(1)` regardless of the magnitude of the values flowing through.
+sequential-time measure: a program can run in linearly-many `prec` unfoldings, yet its
+accumulator can grow super-exponentially, so NO polynomial `evaln` budget exists. We want a cost
+that charges each `prec`/`comp` unfolding `O(1)` regardless of the magnitude of the values flowing
+through.
 
 ## The vehicle — a total paired evaluator `evalT : Code → ℕ → ℕ × ℕ`
 `evalT c n = (value, cost)` mirrors `Code.eval` node-for-node (so the value component reconstructs
 `eval` on the fragment — `eval_eq_val`), while the second component counts one unit per constructor
-unfolding. It is a TOTAL structural recursion on `Code` (the `prec` numeric recursion is `Nat.rec`, not
-a recursive `evalT` call), so the step laws hold UNCONDITIONALLY — no `Part.Dom` side goals. The value
-it computes carries no cap: `eval c n = Part.some (val c n)` for rfind'-free `c`.
+unfolding. It is a TOTAL structural recursion on `Code` (the `prec` numeric recursion is `Nat.rec`,
+not a recursive `evalT` call), so the step laws hold UNCONDITIONALLY — no `Part.Dom` side goals. The
+value it computes carries no cap: `eval c n = Part.some (val c n)` for rfind'-free `c`.
 
 ## Scope
 Only the rfind'-free fragment (`zero succ left right pair comp prec`), on which `eval` is total.
 `rfind'` is a placeholder `(0, 0)` — OUT of the fragment; value-agreement is stated only for
-`RfindFree c`; the search accounts live in `ALT/SearchCost.lean` / `ALT/SearchSpace.lean` (in the
-companion library `lean-algorithmic-learning-theory`). The collector payoff (`tc_prec_le`) needs no
+`RfindFree c`. The generic `prec` bound (`tc_prec_le`) needs no
 value-agreement at all: it is pure step-law bookkeeping, and the per-call rule cost enters as a
 uniform bound `hcg`, which is exactly why the resulting linear bound is value-magnitude-independent.
 -/
@@ -53,9 +43,10 @@ open Nat.Partrec.Code
 /-! ## The paired evaluator, and the value / cost projections -/
 
 /-- **The paired evaluator.** `evalT c n = (value, cost)`, mirroring `Code.eval` node-for-node and
-charging one step per constructor unfolding. Total structural recursion on `Code`: the `prec` numeric
-recursion is `Nat.rec` (the recursive `evalT` calls are on the structural subterms `cf`, `cg`), so no
-partiality and no well-founded recursion. `rfind'` is a placeholder (out of fragment). -/
+charging one step per constructor unfolding. Total structural recursion on `Code`: the `prec`
+numeric recursion is `Nat.rec` (the recursive `evalT` calls are on the structural subterms `cf`,
+`cg`), so no partiality and no well-founded recursion. `rfind'` is a placeholder (out of
+fragment). -/
 def evalT : Code → ℕ → ℕ × ℕ
   | zero => fun _ => (0, 1)
   | succ => fun n => (n + 1, 1)
@@ -119,9 +110,10 @@ def RfindFree : Code → Prop
   | pair cf cg | comp cf cg | prec cf cg => RfindFree cf ∧ RfindFree cg
   | rfind' _ => False
 
-/-- **Value-agreement.** On the rfind'-free fragment the value component of `evalT` is exactly `eval`:
-`eval c n = Part.some (val c n)`. So the cost `tc` is charged along the GENUINE computation — the
-value flowing through is the true `eval` value, uncapped (contrast `evaln`'s value ceiling). -/
+/-- **Value-agreement.** On the rfind'-free fragment the value component of `evalT` is exactly
+`eval`: `eval c n = Part.some (val c n)`. So the cost `tc` is charged along the GENUINE computation
+— the value flowing through is the true `eval` value, uncapped (contrast `evaln`'s value
+ceiling). -/
 theorem eval_eq_val : ∀ {c : Code}, RfindFree c → ∀ n, eval c n = Part.some (val c n) := by
   intro c
   induction c with
@@ -153,7 +145,7 @@ theorem eval_eq_val : ∀ {c : Code}, RfindFree c → ∀ n, eval c n = Part.som
           rw [eval_prec_succ, ihm, Part.bind_eq_bind, Part.bind_some, ihg hg _, val_prec_succ]
   | rfind' cf _ => intro hc; exact hc.elim
 
-/-! ## The collector payoff — a magnitude-INDEPENDENT linear bound for `prec`
+/-! ## The `prec` bound — a magnitude-INDEPENDENT linear bound for `prec`
 
 The generic engine: if the step code `cg` costs at most `B` on EVERY input (a uniform bound), then
 `prec cf cg` on `Nat.pair a n` costs at most `tc cf a + (B+1)·n + 1` — LINEAR in the number of
@@ -173,8 +165,8 @@ theorem tc_prec_le {cf cg : Code} {B : ℕ} (hcg : ∀ x, tc cg x ≤ B) (a n : 
 
 `spaceCost c n` tracks the largest `Nat.size` (bitlength) of any value appearing as an argument or a
 result of a constructor unfolding of `c` on input `n` — a native *workspace* measure, the space
-companion to `tc`. It is charged along the SAME values `evalT` computes (`val`), so on the rfind'-free
-fragment it measures space along the genuine `eval` computation (`eval_eq_val`).
+companion to `tc`. It is charged along the SAME values `evalT` computes (`val`), so on the
+rfind'-free fragment it measures space along the genuine `eval` computation (`eval_eq_val`).
 
 The accounting, node by node:
 * a base node (`zero`/`succ`/`left`/`right`) holds its input and its output — the `max` of their
@@ -187,11 +179,12 @@ The accounting, node by node:
   inside that `cg` I/O account.
 
 The contrast worth naming: `tc` and the values themselves can be astronomically large (`tc` is
-`Θ(value)`; an accumulator can grow super-exponentially), yet `spaceCost` — the bitlength of the values
-a bounded checker actually holds — can stay polynomial. `spaceCost_prec_le` is that statement for the
-loop: a per-step workspace bound `S` together with an accumulator-bitlength bound `S` caps the whole
-`prec` at `max (spaceCost cf a) S`, with NO growth in the iteration count `n` (a `max`, not the `tc`
-sum). `rfind'` is the placeholder `0` (out of fragment), keeping the parallel with `tc`. -/
+`Θ(value)`; an accumulator can grow super-exponentially), yet `spaceCost` — the bitlength of the
+values a bounded checker actually holds — can stay polynomial. `spaceCost_prec_le` is that statement
+for the loop: a per-step workspace bound `S` together with an accumulator-bitlength bound `S` caps
+the whole `prec` at `max (spaceCost cf a) S`, with NO growth in the iteration count `n` (a `max`,
+not the `tc` sum). `rfind'` is the placeholder `0` (out of fragment), keeping the parallel with
+`tc`. -/
 
 /-- The native **space** cost: `spaceCost c n` is the largest bitlength (`Nat.size`) of any value
 appearing as an argument or a result while unfolding `c` on input `n` — the workspace a bounded
@@ -245,16 +238,17 @@ theorem spaceCost_prec_succ (cf cg : Code) (a m : ℕ) :
 The space analogue of `tc_prec_le`, and the shape is the whole point: where the time bound is a SUM
 linear in the iteration count `n`, the space bound is a `max` INDEPENDENT of `n`.
 
-A note on the hypotheses. The time engine takes `∀ x, tc cg x ≤ B` — a genuine uniform bound, because a
-straight-line code's step count does not depend on the MAGNITUDE of its input. Its literal space analogue
-`∀ x, spaceCost cg x ≤ S` is UNSATISFIABLE: a base node holds its input, so `Nat.size x ≤ spaceCost cg x`
-for every real `cg`, and no `S` bounds `Nat.size x` over all `x`. Space, unlike step count, must grow with
-input bitlength. So the faithful — and satisfiable — hypothesis is the per-step bound RELATIVE to a small
-accumulator: `cg` uses `≤ S` workspace on `⟨a, ⟨m, b⟩⟩` whenever the accumulator slot `b` is itself `≤ S`
-bits (`hcg`), together with the accumulator-bitlength bound that keeps the actual accumulators in that
-regime (`hacc`). Both are genuinely consumed; together they are exactly the poly-space-workspace regime a
-bounded checker lives in (bounded per-step verification `hcg`, bounded carried verdict `hacc`) — the same
-loop on which `tc` is instead astronomically large. -/
+A note on the hypotheses. The time engine takes `∀ x, tc cg x ≤ B` — a genuine uniform bound,
+because a straight-line code's step count does not depend on the MAGNITUDE of its input. Its literal
+space analogue `∀ x, spaceCost cg x ≤ S` is UNSATISFIABLE: a base node holds its input, so
+`Nat.size x ≤ spaceCost cg x` for every real `cg`, and no `S` bounds `Nat.size x` over all `x`.
+Space, unlike step count, must grow with input bitlength. So the faithful — and satisfiable —
+hypothesis is the per-step bound RELATIVE to a small accumulator: `cg` uses `≤ S` workspace on
+`⟨a, ⟨m, b⟩⟩` whenever the accumulator slot `b` is itself `≤ S` bits (`hcg`), together with the
+accumulator-bitlength bound that keeps the actual accumulators in that regime (`hacc`). Both are
+genuinely consumed; together they are exactly the poly-space-workspace regime a bounded checker
+lives in (bounded per-step verification `hcg`, bounded carried verdict `hacc`) — the same loop on
+which `tc` is instead astronomically large. -/
 theorem spaceCost_prec_le {cf cg : Code} {S a n : ℕ}
     (hcg : ∀ m b, m ≤ n → Nat.size b ≤ S →
       spaceCost cg (Nat.pair a (Nat.pair m b)) ≤ S)
@@ -275,11 +269,11 @@ theorem spaceCost_prec_le {cf cg : Code} {S a n : ℕ}
       · exact le_max_of_le_right
           (hcg m _ (Nat.le_succ m) (hacc m (Nat.le_succ m)))
 
-/-- **Space is measured along the genuine computation.** `spaceCost` maxes over the bitlengths of the
-values `val` produces, and on the rfind'-free fragment those are exactly the `eval` values
-(`eval_eq_val`). In particular the accumulator whose bitlength `spaceCost_prec_le`'s `hacc` bounds is
-the true `eval` output of the partial `prec`, so the space bound is a bound along the real computation,
-not along a surrogate. -/
+/-- **Space is measured along the genuine computation.** `spaceCost` maxes over the bitlengths of
+the values `val` produces, and on the rfind'-free fragment those are exactly the `eval` values
+(`eval_eq_val`). In particular the accumulator whose bitlength `spaceCost_prec_le`'s `hacc` bounds
+is the true `eval` output of the partial `prec`, so the space bound is a bound along the real
+computation, not along a surrogate. -/
 theorem eval_prec_acc {cf cg : Code} (hc : RfindFree (prec cf cg)) (a m : ℕ) :
     eval (prec cf cg) (Nat.pair a m) = Part.some (val (prec cf cg) (Nat.pair a m)) :=
   eval_eq_val hc (Nat.pair a m)

@@ -1,33 +1,25 @@
-/-
-Copyright (c) 2026 Mykola Palamarchuk. All rights reserved.
-Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Mykola Palamarchuk
--/
 module
 
-public import ChaitinIncompleteness.ChaitinPrefix
-
--- Formal-check file, not Mathlib-destined: opt out of the house-style header linter.
-set_option linter.style.header false
+public import CodeLayer.AdditiveComplexity
+public import CodeLayer.BitStringPrimrec
 
 /-!
-# A computable, self-delimiting parser for `E` ([Decoupling] §6.6)
+# A computable, self-delimiting parser for `E`
 
-Provenance: [Decoupling] §6.6, over `AdditiveComplexity.E`, the prefix (Polish-form) AST
+This is the parser for `AdditiveComplexity.E`, the prefix (Polish-form) AST
 serialization of `CodeLayer/AdditiveComplexity.lean`. `E` is a prefix code by construction
 (`E_append_inj`); this module exhibits the computable decoder that recovers a serialized
-program and its trailing bits from any description, discharging `KolmogorovComplexity.EParserSpec`.
+program and its trailing bits from any description, discharging `EParserSpec`.
 
 ## What this establishes
 * `parseE`, `primrec_parseE`: a total, `Primrec` parser `List Bool → Option (Code × List Bool)`.
 * `parseE_E_append`: `parseE` recovers exactly `(e, r)` from any `E e ++ r`.
 * `parseE_eq_some`: the domain characterization — a successful parse consumed exactly a
   serialization, `parseE w = some (e, r) → w = E e ++ r`.
-* `eParserSpec`: the packaged witness of `KolmogorovComplexity.EParserSpec`.
+* `EParserSpec`, `eParserSpec`: the parser specification and its packaged witness.
 
 ## What this does NOT establish (flagged)
-* `KolmogorovComplexity.REPred kleB`, the sibling leaf hypothesis of `EParserSpec`, and the
-  theory-level assembly consuming both — left to a companion module.
+* Nothing beyond the parser, its specification and the witness.
 -/
 
 
@@ -35,7 +27,15 @@ program and its trailing bits from any description, discharging `KolmogorovCompl
 
 namespace AdditiveComplexity
 
-open Nat.Partrec Nat.Partrec.Code KolmogorovComplexity
+open Nat.Partrec Nat.Partrec.Code
+
+/-- **The parser specification.** A computable parser recovering a serialized machine `e` and its
+trailing argument `r` from any description `E e ++ r` — and ONLY from a description of that
+shape. -/
+def EParserSpec : Prop :=
+  ∃ parse : List Bool → Option (Code × List Bool), Primrec parse ∧
+    (∀ e r, parse (E e ++ r) = some (e, r)) ∧
+    (∀ w e r, parse w = some (e, r) → w = E e ++ r)
 
 /-! ## The parser: a nested fold over an explicit stack of open frames -/
 
@@ -731,9 +731,8 @@ theorem eParserSpec : EParserSpec :=
 
 /-! ## Axiom guards -/
 
--- The axiom-list expectations below cannot be wrapped (`#guard_msgs` matches one line per
--- expectation); scoped to this block rather than the whole file.
-set_option linter.style.longLine false in
+-- The longer axiom-list expectations below cannot be wrapped (`#guard_msgs` matches one line per
+-- expectation); each carries its own scoped exemption rather than a file-level one.
 /-- info: 'AdditiveComplexity.parseE_E_append' depends on axioms: [propext, Quot.sound] -/
 #guard_msgs (whitespace := lax) in
 #print axioms parseE_E_append
