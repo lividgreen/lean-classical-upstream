@@ -64,7 +64,7 @@ def fluxOf (j01 j10 j11 : ℤ) : ZMod 2 → ZMod 2 → ℤ := fun a b =>
   if a = 0 then (if b = 0 then 0 else j01) else (if b = 0 then j10 else j11)
 
 /-- A rule with a flux sends `0 0 0` to `0`. -/
-theorem map_zero_of_isFlux {f : ZMod 2 → ZMod 2 → ZMod 2 → ZMod 2} {J : ZMod 2 → ZMod 2 → ℤ}
+private theorem map_zero_of_isFlux {f : ZMod 2 → ZMod 2 → ZMod 2 → ZMod 2} {J : ZMod 2 → ZMod 2 → ℤ}
     (hJ : IsFlux f J) : f 0 0 0 = 0 := by
   have h := hJ.2 0 0 0
   rw [hJ.1] at h
@@ -72,12 +72,12 @@ theorem map_zero_of_isFlux {f : ZMod 2 → ZMod 2 → ZMod 2 → ZMod 2} {J : ZM
   exact (ZMod.val_eq_zero _).1 (by exact_mod_cast h)
 
 /-- The value in `ℕ` of an element of `ZMod 2` is `1` where it is nonzero, else `0`. -/
-theorem val_eq_ite (a : ZMod 2) : a.val = if a ≠ 0 then 1 else 0 := by
+private theorem val_eq_ite (a : ZMod 2) : a.val = if a ≠ 0 then 1 else 0 := by
   revert a
   decide
 
 /-- On a finset containing the support, the number of ones is the sum of the values. -/
-theorem ones_eq_sum (x : ℤ → ZMod 2) (W : Finset ℤ) (h : ∀ i, x i ≠ 0 → i ∈ W) :
+private theorem ones_eq_sum (x : ℤ → ZMod 2) (W : Finset ℤ) (h : ∀ i, x i ≠ 0 → i ∈ W) :
     ones x = ∑ i ∈ W, (x i).val := by
   have hs : Function.support x = ↑(W.filter fun i => x i ≠ 0) := by
     ext i
@@ -232,7 +232,7 @@ theorem exists_isFlux_of_mem (n : Fin 256)
 def cfg (S : Finset ℤ) : ℤ → ZMod 2 := fun i => if i ∈ S then 1 else 0
 
 /-- The configuration `cfg S` has `S.card` ones. -/
-theorem ones_cfg (S : Finset ℤ) : ones (cfg S) = S.card := by
+private theorem ones_cfg (S : Finset ℤ) : ones (cfg S) = S.card := by
   rw [ones_eq_sum _ S fun i hi => by
     by_contra h; exact hi (by simp [cfg, h])]
   rw [Finset.card_eq_sum_ones]
@@ -242,8 +242,8 @@ theorem ones_cfg (S : Finset ℤ) : ones (cfg S) = S.card := by
 
 /-- At a quiescent rule, the image of `cfg S` for `S` inside `{0, 1, 2}` has its ones among the
 cells `-1, …, 3`, and their number is the sum of the values there. -/
-theorem ones_step_cfg {f : ZMod 2 → ZMod 2 → ZMod 2 → ZMod 2} (hq : f 0 0 0 = 0) (S : Finset ℤ)
-    (hS : S ⊆ Finset.Icc 0 2) :
+private theorem ones_step_cfg {f : ZMod 2 → ZMod 2 → ZMod 2 → ZMod 2} (hq : f 0 0 0 = 0)
+    (S : Finset ℤ) (hS : S ⊆ Finset.Icc 0 2) :
     ones (LocalRuleColumns.step f (cfg S)) =
       ∑ i ∈ ({-1, 0, 1, 2, 3} : Finset ℤ), (f (cfg S (i - 1)) (cfg S i) (cfg S (i + 1))).val := by
   apply ones_eq_sum

@@ -70,7 +70,7 @@ noncomputable def globalElt (A : Asm) (a : A.carrier) : terminalAsm ⟶ A :=
       by rw [(exists_constCode (A.realized a).choose).choose_spec]; exact Part.mem_some _,
       (A.realized a).choose_spec⟩⟩
 
-@[simp] theorem globalElt_apply (A : Asm) (a : A.carrier) (x : terminalAsm.carrier) :
+@[simp] private theorem globalElt_apply (A : Asm) (a : A.carrier) (x : terminalAsm.carrier) :
     (globalElt A a).1 x = a := rfl
 
 /-! ### The classifier object `Bool = 𝟙 ⊕ 𝟙` -/
@@ -83,7 +83,7 @@ def boolAsm : Asm := coprodAsm terminalAsm terminalAsm
 def tru : terminalAsm ⟶ boolAsm := inl terminalAsm terminalAsm
 
 /-- The classifier carrier has exactly two global values, `true = inl ⋆` and `false = inr ⋆`. -/
-theorem boolAsm_eq_or (z : boolAsm.carrier) :
+private theorem boolAsm_eq_or (z : boolAsm.carrier) :
     z = Sum.inl PUnit.unit ∨ z = Sum.inr PUnit.unit := by
   rcases z with u | u
   · exact Or.inl (by cases u; rfl)
@@ -116,7 +116,7 @@ comprehension subobject shares `A`'s encodings, so its inclusion costs no capaci
 def subIncl (A : Asm) (P : A.carrier → Prop) : subAsm A P ⟶ A :=
   ⟨Subtype.val, idCode, fun x n hn => ⟨n, by rw [ap_idCode]; exact Part.mem_some n, hn⟩⟩
 
-@[simp] theorem subIncl_apply (A : Asm) (P : A.carrier → Prop) (x : { a // P a }) :
+@[simp] private theorem subIncl_apply (A : Asm) (P : A.carrier → Prop) (x : { a // P a }) :
     (subIncl A P).1 x = x.1 := rfl
 
 /-- **Factorization through a comprehension subobject.** A morphism `u : C ⟶ A` whose image lands in
@@ -154,7 +154,8 @@ theorem finAsm_allTrackable (M : ℕ) : AllTrackable (finAsm M) :=
 def charFn {A : Asm} (P : A.carrier → Prop) [DecidablePred P] : A.carrier → boolAsm.carrier :=
   fun a => if P a then Sum.inl PUnit.unit else Sum.inr PUnit.unit
 
-theorem charFn_eq_true_iff {A : Asm} (P : A.carrier → Prop) [DecidablePred P] (a : A.carrier) :
+private theorem charFn_eq_true_iff {A : Asm} (P : A.carrier → Prop) [DecidablePred P]
+    (a : A.carrier) :
     charFn P a = Sum.inl PUnit.unit ↔ P a := by
   unfold charFn
   by_cases h : P a
@@ -167,11 +168,12 @@ morphism because `A` is a finite object out of which every function is realized 
 def chi (A : Asm) (P : A.carrier → Prop) [DecidablePred P] (hA : AllTrackable A) : A ⟶ boolAsm :=
   ⟨charFn P, hA boolAsm (charFn P)⟩
 
-@[simp] theorem chi_apply (A : Asm) (P : A.carrier → Prop) [DecidablePred P] (hA : AllTrackable A)
+@[simp] private theorem chi_apply (A : Asm) (P : A.carrier → Prop) [DecidablePred P]
+    (hA : AllTrackable A)
     (a : A.carrier) : (chi A P hA).1 a = charFn P a := rfl
 
 /-- Two morphisms out of the terminal object agree iff they agree at the single point. -/
-theorem hom_from_terminal_ext {B : Asm} (p q : terminalAsm ⟶ B)
+private theorem hom_from_terminal_ext {B : Asm} (p q : terminalAsm ⟶ B)
     (h : p.1 PUnit.unit = q.1 PUnit.unit) : p = q := by
   apply Subtype.ext; funext x
   cases x

@@ -1,5 +1,5 @@
 name = "classical_upstream"
-version = "0.3.0"
+version = "0.4.0"
 keywords = ["math", "algorithmic-information-theory", "learning-theory", "ergodic-theory", "realizability"]
 
 [leanOptions]
@@ -18,7 +18,7 @@ rev = "v4.35.0"
 [[require]]
 name = "Foundation"
 git = "https://github.com/FormalizedFormalLogic/Foundation"
-rev = "c3eb37ae896dc8f1d239ba1511e74d9f25e9d158"
+rev = "63bfd1b2e821dc2367b08f68d379303d08631f83"
 
 [[lean_lib]]
 name = "CodeLayer"

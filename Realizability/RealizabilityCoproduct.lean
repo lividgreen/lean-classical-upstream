@@ -82,10 +82,10 @@ def coprodAsm (A B : Asm) : Asm where
           change (Nat.pair 1 nb).unpair.1 = 1 ∧ B.realizes (Nat.pair 1 nb).unpair.2 b
           rw [Nat.unpair_pair]; exact ⟨rfl, hb⟩⟩
 
-@[simp] theorem coprodAsm_realizes_inl (A B : Asm) (n : ℕ) (a : A.carrier) :
+@[simp] private theorem coprodAsm_realizes_inl (A B : Asm) (n : ℕ) (a : A.carrier) :
     (coprodAsm A B).realizes n (Sum.inl a) ↔ (n.unpair.1 = 0 ∧ A.realizes n.unpair.2 a) := Iff.rfl
 
-@[simp] theorem coprodAsm_realizes_inr (A B : Asm) (n : ℕ) (b : B.carrier) :
+@[simp] private theorem coprodAsm_realizes_inr (A B : Asm) (n : ℕ) (b : B.carrier) :
     (coprodAsm A B).realizes n (Sum.inr b) ↔ (n.unpair.1 = 1 ∧ B.realizes n.unpair.2 b) := Iff.rfl
 
 /-! ### The injection and copairing realizer codes -/
@@ -148,10 +148,12 @@ noncomputable def inrCode : ℕ := exists_inrCode.choose
 `rg` according to the tag (`ap_copairCode`). -/
 noncomputable def copairCode (rf rg : ℕ) : ℕ := (exists_copairCode rf rg).choose
 
-theorem ap_inlCode (n : ℕ) : ap inlCode n = Part.some (Nat.pair 0 n) := exists_inlCode.choose_spec n
-theorem ap_inrCode (n : ℕ) : ap inrCode n = Part.some (Nat.pair 1 n) := exists_inrCode.choose_spec n
+private theorem ap_inlCode (n : ℕ) :
+    ap inlCode n = Part.some (Nat.pair 0 n) := exists_inlCode.choose_spec n
+private theorem ap_inrCode (n : ℕ) :
+    ap inrCode n = Part.some (Nat.pair 1 n) := exists_inrCode.choose_spec n
 
-theorem ap_copairCode (rf rg n : ℕ) :
+private theorem ap_copairCode (rf rg n : ℕ) :
     ap (copairCode rf rg) n =
       (if n.unpair.1 = 0 then ap rf n.unpair.2 else ap rg n.unpair.2) :=
   (exists_copairCode rf rg).choose_spec n
@@ -208,9 +210,10 @@ noncomputable def copair {A B C : Asm} (f : A ⟶ C) (g : B ⟶ C) : coprodAsm A
   ⟨Sum.elim f.1 g.1, copairCode f.2.choose g.2.choose,
     tracks_copair f.2.choose_spec g.2.choose_spec⟩
 
-@[simp] theorem inl_apply (A B : Asm) (a : A.carrier) : (inl A B).1 a = Sum.inl a := rfl
-@[simp] theorem inr_apply (A B : Asm) (b : B.carrier) : (inr A B).1 b = Sum.inr b := rfl
-@[simp] theorem copair_apply {A B C : Asm} (f : A ⟶ C) (g : B ⟶ C) (x : A.carrier ⊕ B.carrier) :
+@[simp] private theorem inl_apply (A B : Asm) (a : A.carrier) : (inl A B).1 a = Sum.inl a := rfl
+@[simp] private theorem inr_apply (A B : Asm) (b : B.carrier) : (inr A B).1 b = Sum.inr b := rfl
+@[simp] private theorem copair_apply {A B C : Asm} (f : A ⟶ C) (g : B ⟶ C)
+    (x : A.carrier ⊕ B.carrier) :
     (copair f g).1 x = Sum.elim f.1 g.1 x := rfl
 
 /-- **The copairing universal property (finite coproduct on the genuine carrier).** For every pair

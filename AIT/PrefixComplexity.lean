@@ -173,14 +173,14 @@ theorem kraft_prior {ι : Type*} [Encodable ι] :
 
 /-- The self-delimiting length of code `c` — the quantity minimized by `KP`
 (`KP x = sInf { plenc c | Computes c x }`). -/
-def plenc (c : Code) : ℕ := plen (Encodable.encode c)
+private def plenc (c : Code) : ℕ := plen (Encodable.encode c)
 
 /-- Any program computing `x` bounds `KP x` by its own self-delimiting length. -/
-theorem KP_le {c : Code} {x : ℕ} (h : Computes c x) : KP x ≤ plenc c :=
+private theorem KP_le {c : Code} {x : ℕ} (h : Computes c x) : KP x ≤ plenc c :=
   Nat.sInf_le ⟨c, h, rfl⟩
 
 /-- `KP` is unbounded — from `K_unbounded` via `KP_eq` and the growth of `Nat.size`. -/
-theorem KP_unbounded (n : ℕ) : ∃ x, n < KP x := by
+private theorem KP_unbounded (n : ℕ) : ∃ x, n < KP x := by
   obtain ⟨x, hx⟩ := K_unbounded (2 ^ n)
   refine ⟨x, ?_⟩
   rw [KP_eq, plen]
@@ -189,7 +189,7 @@ theorem KP_unbounded (n : ℕ) : ∃ x, n < KP x := by
 
 /-- `plenc = plen ∘ encode` is computable: `Nat.size` is computable (`computable_nat_size`),
 composed with `· + 1` and `2 * ·`. -/
-theorem computable_plenc : Computable plenc := by
+private theorem computable_plenc : Computable plenc := by
   have hsize : Computable (fun m : ℕ => Nat.size (m + 1)) :=
     computable_nat_size.comp Primrec.succ.to_comp
   have hmul : Computable (fun m : ℕ => 2 * Nat.size (m + 1)) :=

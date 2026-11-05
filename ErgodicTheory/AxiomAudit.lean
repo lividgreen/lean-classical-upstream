@@ -1,10 +1,13 @@
 module
 
+public import ErgodicTheory.EdgePeriods
 public import ErgodicTheory.ElementaryRuleClasses
 public import ErgodicTheory.LocalRuleColumns
 public import ErgodicTheory.NumberConservation
 public import ErgodicTheory.MixingHoeffding
 public import ErgodicTheory.PascalColumns
+public import ErgodicTheory.Rule18Kinks
+public import ErgodicTheory.Rule22Sparse
 
 
 /-!
@@ -40,6 +43,11 @@ set_option linter.style.longLine false in
 /-- info: 'LocalRuleColumns.eventuallyPeriodic_column_between_nonvacuous' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs (whitespace := lax) in
 #print axioms LocalRuleColumns.eventuallyPeriodic_column_between_nonvacuous
+
+set_option linter.style.longLine false in
+/-- info: 'LocalRuleColumns.iterate_two_pow_step_linear' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms LocalRuleColumns.iterate_two_pow_step_linear
 
 set_option linter.style.longLine false in
 /-- info: 'LocalRuleColumns.iterate_two_pow_step90' depends on axioms: [propext, Classical.choice, Quot.sound] -/
@@ -113,3 +121,137 @@ set_option linter.style.longLine false in
 /-- info: 'NumberConservation.conserves_iff' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs (whitespace := lax) in
 #print axioms NumberConservation.conserves_iff
+
+set_option linter.style.longLine false in
+/-- info: 'Rule22Sparse.step_rule22_eq_of_supportInCoset' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms Rule22Sparse.step_rule22_eq_of_supportInCoset
+
+set_option linter.style.longLine false in
+/-- info: 'Rule22Sparse.iterate_step_rule22_two_eq_rule90' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms Rule22Sparse.iterate_step_rule22_two_eq_rule90
+
+set_option linter.style.longLine false in
+/-- info: 'Rule22Sparse.supportInCoset_iterate_step_rule90_two' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms Rule22Sparse.supportInCoset_iterate_step_rule90_two
+
+set_option linter.style.longLine false in
+/-- info: 'Rule22Sparse.iterate_step_rule22_two_mul_eq_rule90' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms Rule22Sparse.iterate_step_rule22_two_mul_eq_rule90
+
+set_option linter.style.longLine false in
+/-- info: 'Rule22Sparse.supportInCoset_iterate_step_rule22_two_mul' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms Rule22Sparse.supportInCoset_iterate_step_rule22_two_mul
+
+set_option linter.style.longLine false in
+/-- info: 'Rule22Sparse.iterate_step_rule22_two_mul_single' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms Rule22Sparse.iterate_step_rule22_two_mul_single
+
+set_option linter.style.longLine false in
+/-- info: 'Rule22Sparse.iterate_step_rule90_two_mul_single_even' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms Rule22Sparse.iterate_step_rule90_two_mul_single_even
+
+set_option linter.style.longLine false in
+/-- info: 'Rule22Sparse.iterate_step_rule90_two_mul_single_odd' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms Rule22Sparse.iterate_step_rule90_two_mul_single_odd
+
+set_option linter.style.longLine false in
+/-- info: 'Rule22Sparse.iterate_step_rule22_odd_single' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms Rule22Sparse.iterate_step_rule22_odd_single
+
+set_option linter.style.longLine false in
+/-- info: 'Rule22Sparse.not_iterate_step_rule22_two_eq_rule90_off_coset' depends on axioms: [propext, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms Rule22Sparse.not_iterate_step_rule22_two_eq_rule90_off_coset
+
+set_option linter.style.longLine false in
+/-- info: 'Rule22Sparse.iterate_step_rule22_two_reduction' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms Rule22Sparse.iterate_step_rule22_two_reduction
+
+set_option linter.style.longLine false in
+/-- info: 'Rule22Sparse.iterate_step_rule22_two_mul_reduction' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms Rule22Sparse.iterate_step_rule22_two_mul_reduction
+
+set_option linter.style.longLine false in
+/-- info: 'Rule22Sparse.not_iterate_step_rule22_two_reduction_off_even' depends on axioms: [propext, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms Rule22Sparse.not_iterate_step_rule22_two_reduction_off_even
+
+set_option linter.style.longLine false in
+/-- info: 'Rule18Kinks.kinkSet_finite' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms Rule18Kinks.kinkSet_finite
+
+set_option linter.style.longLine false in
+/-- info: 'Rule18Kinks.kinks_step_le_of_agree' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms Rule18Kinks.kinks_step_le_of_agree
+
+set_option linter.style.longLine false in
+/-- info: 'Rule18Kinks.kinks_step_rule18_le' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms Rule18Kinks.kinks_step_rule18_le
+
+/-- info: 'EdgePeriods.iterate_eq_of_eq_below' depends on axioms: [propext, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms EdgePeriods.iterate_eq_of_eq_below
+
+set_option linter.style.longLine false in
+/-- info: 'EdgePeriods.exists_prefix_return' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms EdgePeriods.exists_prefix_return
+
+set_option linter.style.longLine false in
+/-- info: 'EdgePeriods.prefixPeriod_pos' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms EdgePeriods.prefixPeriod_pos
+
+set_option linter.style.longLine false in
+/-- info: 'EdgePeriods.iterate_eq_of_add_prefixPeriod' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms EdgePeriods.iterate_eq_of_add_prefixPeriod
+
+set_option linter.style.longLine false in
+/-- info: 'EdgePeriods.prefixPeriod_dvd_of_return' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms EdgePeriods.prefixPeriod_dvd_of_return
+
+set_option linter.style.longLine false in
+/-- info: 'EdgePeriods.prefixPeriod_zero' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms EdgePeriods.prefixPeriod_zero
+
+set_option linter.style.longLine false in
+/-- info: 'EdgePeriods.prefixPeriod_succ_eq_or_eq_two_mul' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms EdgePeriods.prefixPeriod_succ_eq_or_eq_two_mul
+
+set_option linter.style.longLine false in
+/-- info: 'EdgePeriods.prefixPeriod_eq_two_pow' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms EdgePeriods.prefixPeriod_eq_two_pow
+
+set_option linter.style.longLine false in
+/-- info: 'EdgePeriods.apply_add_prefixPeriod_of_eq_two_mul' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms EdgePeriods.apply_add_prefixPeriod_of_eq_two_mul
+
+set_option linter.style.longLine false in
+/-- info: 'EdgePeriods.apply_add_prefixPeriod_of_eq' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms EdgePeriods.apply_add_prefixPeriod_of_eq
+
+set_option linter.style.longLine false in
+/-- info: 'EdgePeriods.prefixPeriod_succ_eq_or_eq_two_mul_nonvacuous' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms EdgePeriods.prefixPeriod_succ_eq_or_eq_two_mul_nonvacuous

@@ -69,7 +69,7 @@ def extractFn (p : ℕ) : ℕ :=
   List.getD ((Encodable.decode (Nat.unpair p).1 : Option (List ℕ)).getD []) (Nat.unpair p).2 0
 
 /-- `extractFn` is primitive recursive (decode + `List.getD` + `Nat.unpair`, all Primrec). -/
-theorem primrec_extractFn : Primrec extractFn := by
+private theorem primrec_extractFn : Primrec extractFn := by
   have h1 : Primrec (fun p : ℕ => (Nat.unpair p).1) := Primrec.fst.comp Primrec.unpair
   have h2 : Primrec (fun p : ℕ => (Nat.unpair p).2) := Primrec.snd.comp Primrec.unpair
   have h3 : Primrec (fun p : ℕ => (Encodable.decode (Nat.unpair p).1 : Option (List ℕ))) :=
@@ -87,14 +87,14 @@ uncontrolled constant. -/
 noncomputable def extractor : Code := Classical.choose (exists_code.mp partrec_extractFn)
 
 /-- The extractor's eval law: `eval extractor p = extractFn p`. -/
-theorem eval_extractor (p : ℕ) : extractor.eval p = Part.some (extractFn p) := by
+private theorem eval_extractor (p : ℕ) : extractor.eval p = Part.some (extractFn p) := by
   have h := congrFun (Classical.choose_spec (exists_code.mp partrec_extractFn)) p
   simpa [extractor] using h
 
 /-- The singleton emitter: `n ↦ encode [n]`. -/
 def mkSingletonFn (n : ℕ) : ℕ := Encodable.encode ([n] : List ℕ)
 
-theorem computable_mkSingletonFn : Computable mkSingletonFn :=
+private theorem computable_mkSingletonFn : Computable mkSingletonFn :=
   Computable.encode.comp (Computable.list_cons.comp Computable.id (Computable.const []))
 
 theorem partrec_mkSingletonFn : Nat.Partrec (fun n : ℕ => (mkSingletonFn n : ℕ)) :=
@@ -104,7 +104,8 @@ theorem partrec_mkSingletonFn : Nat.Partrec (fun n : ℕ => (mkSingletonFn n : �
 noncomputable def mkSingleton : Code := Classical.choose (exists_code.mp partrec_mkSingletonFn)
 
 /-- The singleton emitter's eval law: `eval mkSingleton n = encode [n]`. -/
-theorem eval_mkSingleton (n : ℕ) : mkSingleton.eval n = Part.some (Encodable.encode [n]) := by
+private theorem eval_mkSingleton (n : ℕ) :
+    mkSingleton.eval n = Part.some (Encodable.encode [n]) := by
   have h := congrFun (Classical.choose_spec (exists_code.mp partrec_mkSingletonFn)) n
   simpa [mkSingleton, mkSingletonFn] using h
 
@@ -124,7 +125,7 @@ noncomputable def structFn (x α : ℕ) : ℕ∞ :=
   if (modelLogCards x α).Nonempty then ((sInf (modelLogCards x α) : ℕ) : ℕ∞) else ⊤
 
 /-- More budget can only add models. -/
-theorem modelLogCards_subset {x α α' : ℕ} (h : α ≤ α') :
+private theorem modelLogCards_subset {x α α' : ℕ} (h : α ≤ α') :
     modelLogCards x α ⊆ modelLogCards x α' := by
   rintro l ⟨c, L, hcelen, hceval, hnodup, hxL, rfl⟩
   exact ⟨c, L, le_trans hcelen h, hceval, hnodup, hxL, rfl⟩

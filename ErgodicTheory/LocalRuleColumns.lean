@@ -31,6 +31,10 @@ so; the carrier is a type `Q` and all configurations.
 * `rule90`, `iterate_two_pow_step90` — **`2 ^ j` steps of rule `90` in one identity**
   (Wolfram 1983): over `ZMod 2` the iterate is
   `x (i - 2 ^ j) + x (i + 2 ^ j)`, by repeated doubling-cancellation, with no binomial coefficient.
+* `iterate_two_pow_step_linear` — **`2 ^ j` steps of any linear rule in one identity**: over
+  `ZMod 2` the iterate of `α * a + β * b + γ * c` is
+  `α * x (i - 2 ^ j) + β * x i + γ * x (i + 2 ^ j)` (the Frobenius identity in characteristic two,
+  Martin, Odlyzko & Wolfram 1984, Eq. (A.4)); rule `90` is the case `(1, 0, 1)`.
 * `iterate_step_eq_zero_of_gt` / `iterate_step_eq_zero_of_lt` — a quiescent rule keeps a
   configuration that vanishes past a bound vanishing past that bound moved by the elapsed time.
 * `column_step90_single_one_live` / `column_step90_single_one_dead_between` — from the single seed
@@ -194,6 +198,41 @@ theorem iterate_two_pow_step90 :
       rw [e1, e2, e3, e4]
       have hcollapse : ∀ a b c : ZMod 2, a + b + (b + c) = a + c := by decide
       exact hcollapse (x (i - (2 : ℤ) ^ (j + 1))) (x i) (x (i + (2 : ℤ) ^ (j + 1)))
+
+/-- **`2 ^ j` steps of a linear rule, in one identity**: the Frobenius identity in characteristic
+two (Martin, Odlyzko & Wolfram 1984, Eq. (A.4); at rule `90` Wolfram 1983), with no finiteness
+of support — the combination of the three cells returns as the same combination of the cells
+`2 ^ j` away, the cross terms cancelling. Rule `90` is the case `(1, 0, 1)`
+(`iterate_two_pow_step90`). This is the identity under which rule `60` reproduces every finite
+pattern (Amoroso & Cooper 1971, Theorem 1). -/
+theorem iterate_two_pow_step_linear (α β γ : ZMod 2) :
+    ∀ (j : ℕ) (x : ℤ → ZMod 2) (i : ℤ),
+      ((step fun a b c => α * a + β * b + γ * c) ^[2 ^ j] x) i =
+        α * x (i - 2 ^ j) + β * x i + γ * x (i + 2 ^ j) := by
+  intro j
+  induction j with
+  | zero =>
+      intro x i
+      change step (fun a b c => α * a + β * b + γ * c) x i =
+        α * x (i - (2 : ℤ) ^ (0 : ℕ)) + β * x i + γ * x (i + (2 : ℤ) ^ (0 : ℕ))
+      norm_num [step]
+  | succ j ih =>
+      intro x i
+      have hiter : (2 : ℕ) ^ (j + 1) = 2 ^ j + 2 ^ j := by rw [pow_succ]; ring
+      rw [hiter, Function.iterate_add_apply,
+        ih ((step fun a b c => α * a + β * b + γ * c) ^[2 ^ j] x) i,
+        ih x (i - (2 : ℤ) ^ j), ih x i, ih x (i + (2 : ℤ) ^ j)]
+      have hpow : (2 : ℤ) ^ (j + 1) = (2 : ℤ) ^ j + (2 : ℤ) ^ j := by rw [pow_succ]; ring
+      have e1 : i - (2 : ℤ) ^ j - (2 : ℤ) ^ j = i - (2 : ℤ) ^ (j + 1) := by rw [hpow]; ring
+      have e2 : i - (2 : ℤ) ^ j + (2 : ℤ) ^ j = i := by ring
+      have e3 : i + (2 : ℤ) ^ j - (2 : ℤ) ^ j = i := by ring
+      have e4 : i + (2 : ℤ) ^ j + (2 : ℤ) ^ j = i + (2 : ℤ) ^ (j + 1) := by rw [hpow]; ring
+      rw [e1, e2, e3, e4]
+      have hc : ∀ α β γ x y z u v : ZMod 2, α * (α * x + β * y + γ * z) +
+          β * (α * y + β * z + γ * u) + γ * (α * z + β * u + γ * v) =
+            α * x + β * z + γ * v := by
+        decide
+      exact hc α β γ _ _ _ _ _
 
 /-! ## Quiescent rules: the light cone -/
 

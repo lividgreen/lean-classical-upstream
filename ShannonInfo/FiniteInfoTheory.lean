@@ -515,7 +515,7 @@ theorem data_processing (ν : α → β → γ → ℝ) (hnn : ∀ a b c, 0 ≤ 
 
 /-- Mutual information is symmetric in its two variables, `I(X;Y) = I(Y;X)` (swap the sum order and
 the product of marginals). -/
-theorem mutualInfo_comm (μ : α → β → ℝ) : mutualInfo μ = mutualInfo (fun b a => μ a b) := by
+private theorem mutualInfo_comm (μ : α → β → ℝ) : mutualInfo μ = mutualInfo (fun b a => μ a b) := by
   unfold mutualInfo
   rw [Finset.sum_comm]
   refine Finset.sum_congr rfl (fun b _ => Finset.sum_congr rfl (fun a _ => ?_))

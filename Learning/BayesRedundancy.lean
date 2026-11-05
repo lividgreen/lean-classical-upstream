@@ -190,7 +190,7 @@ variable {q : ι → ℕ → A → ℝ} {w : ι → ℝ} {ω : ℕ → A} {R : �
 
 omit [Fintype A] [DecidableEq A] [Fintype ι] in
 /-- The likelihood extends by the step-`t` conditional. -/
-lemma Lik_succ (i : ι) (t : ℕ) : Lik q ω i (t + 1) = Lik q ω i t * q i t (ω t) := by
+private lemma Lik_succ (i : ι) (t : ℕ) : Lik q ω i (t + 1) = Lik q ω i t * q i t (ω t) := by
   unfold Lik; rw [Finset.prod_range_succ]
 
 omit [Fintype A] [DecidableEq A] [Fintype ι] in
@@ -204,20 +204,20 @@ lemma Lik_realizable (hreal : ∀ s, q R s (ω s) = 1) (t : ℕ) : Lik q ω R t 
 
 omit [Fintype A] [DecidableEq A] in
 /-- `P̄(t+1) = ∑_i w_i L_i(t) q_i(ω_t)` — the mixture mass extends by the realised conditional. -/
-lemma Pbarₚ_succ (t : ℕ) : Pbarₚ q w ω (t + 1) = ∑ i, w i * Lik q ω i t * q i t (ω t) := by
+private lemma Pbarₚ_succ (t : ℕ) : Pbarₚ q w ω (t + 1) = ∑ i, w i * Lik q ω i t * q i t (ω t) := by
   unfold Pbarₚ
   refine Finset.sum_congr rfl (fun i _ => ?_)
   rw [Lik_succ]; ring
 
 omit [Fintype A] [DecidableEq A] in
 /-- The conditional predictive at the realised symbol is the mixture-mass ratio. -/
-lemma condPred_self_ratio (t : ℕ) :
+private lemma condPred_self_ratio (t : ℕ) :
     condPred q w ω t (ω t) = Pbarₚ q w ω (t + 1) / Pbarₚ q w ω t := by
   unfold condPred; rw [← Pbarₚ_succ]
 
 omit [Fintype A] [DecidableEq A] in
 /-- `P̄(t) > 0` (it dominates the true rule's term `w R · L_R(t) = w R > 0`). -/
-lemma Pbarₚ_pos (hq : ∀ i s x, 0 ≤ q i s x) (hw : ∀ i, 0 ≤ w i) (hwR : 0 < w R)
+private lemma Pbarₚ_pos (hq : ∀ i s x, 0 ≤ q i s x) (hw : ∀ i, 0 ≤ w i) (hwR : 0 < w R)
     (hreal : ∀ s, q R s (ω s) = 1) (t : ℕ) : 0 < Pbarₚ q w ω t := by
   have hge : w R * Lik q ω R t ≤ Pbarₚ q w ω t :=
     Finset.single_le_sum (fun i _ => mul_nonneg (hw i) (Lik_nonneg hq i t)) (Finset.mem_univ R)
@@ -225,7 +225,7 @@ lemma Pbarₚ_pos (hq : ∀ i s x, 0 ≤ q i s x) (hw : ∀ i, 0 ≤ w i) (hwR :
   linarith
 
 omit [Fintype A] [DecidableEq A] in
-lemma condPred_nonneg (hq : ∀ i s x, 0 ≤ q i s x) (hw : ∀ i, 0 ≤ w i) (hwR : 0 < w R)
+private lemma condPred_nonneg (hq : ∀ i s x, 0 ≤ q i s x) (hw : ∀ i, 0 ≤ w i) (hwR : 0 < w R)
     (hreal : ∀ s, q R s (ω s) = 1) (t : ℕ) (x : A) : 0 ≤ condPred q w ω t x := by
   unfold condPred
   refine div_nonneg ?_ (le_of_lt (Pbarₚ_pos hq hw hwR hreal t))
@@ -234,7 +234,7 @@ lemma condPred_nonneg (hq : ∀ i s x, 0 ≤ q i s x) (hw : ∀ i, 0 ≤ w i) (h
 omit [DecidableEq A] in
 /-- **`condPred` is a pmf** (pmf-propagation): `∑_x cond_t(x) = 1`, since
 `∑_x P̄(ω⌢x at t) = P̄(t)`. -/
-lemma condPred_sum (hq : ∀ i s x, 0 ≤ q i s x) (hw : ∀ i, 0 ≤ w i) (hwR : 0 < w R)
+private lemma condPred_sum (hq : ∀ i s x, 0 ≤ q i s x) (hw : ∀ i, 0 ≤ w i) (hwR : 0 < w R)
     (hreal : ∀ s, q R s (ω s) = 1) (hqsum : ∀ i s, ∑ x, q i s x = 1) (t : ℕ) :
     ∑ x, condPred q w ω t x = 1 := by
   have hpos := Pbarₚ_pos hq hw hwR hreal t
@@ -245,7 +245,7 @@ lemma condPred_sum (hq : ∀ i s x, 0 ≤ q i s x) (hw : ∀ i, 0 ≤ w i) (hwR 
   rw [← Finset.mul_sum, hqsum i t, mul_one]
 
 omit [Fintype A] [DecidableEq A] in
-lemma condPred_self_pos (hq : ∀ i s x, 0 ≤ q i s x) (hw : ∀ i, 0 ≤ w i) (hwR : 0 < w R)
+private lemma condPred_self_pos (hq : ∀ i s x, 0 ≤ q i s x) (hw : ∀ i, 0 ≤ w i) (hwR : 0 < w R)
     (hreal : ∀ s, q R s (ω s) = 1) (t : ℕ) : 0 < condPred q w ω t (ω t) := by
   rw [condPred_self_ratio]
   exact div_pos (Pbarₚ_pos hq hw hwR hreal (t + 1)) (Pbarₚ_pos hq hw hwR hreal t)
@@ -337,10 +337,10 @@ noncomputable def errorTimes (q : ι → ℕ → A → ℝ) (w : ι → ℝ) (ω
   (Finset.range n).filter fun t =>
     ε < sqHellinger (fun x => if x = ω t then 1 else 0) (condPred q w ω t)
 
-lemma errorTimes_subset (ε : ℝ) (n : ℕ) : errorTimes q w ω ε n ⊆ Finset.range n :=
+private lemma errorTimes_subset (ε : ℝ) (n : ℕ) : errorTimes q w ω ε n ⊆ Finset.range n :=
   Finset.filter_subset _ _
 
-lemma lt_of_mem_errorTimes {ε : ℝ} {n t : ℕ} (ht : t ∈ errorTimes q w ω ε n) :
+private lemma lt_of_mem_errorTimes {ε : ℝ} {n t : ℕ} (ht : t ∈ errorTimes q w ω ε n) :
     ε < sqHellinger (fun x => if x = ω t then 1 else 0) (condPred q w ω t) :=
   (Finset.mem_filter.mp ht).2
 

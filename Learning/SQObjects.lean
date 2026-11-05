@@ -276,7 +276,7 @@ def χ (S : Finset (Fin n)) (x : Fin n → ZMod 2) : ℝ :=
   if (∑ i ∈ S, x i) = 0 then 1 else -1
 
 /-- Characters are `±1`, hence square to `1`. -/
-lemma chi_sq (S : Finset (Fin n)) (x : Fin n → ZMod 2) : χ S x * χ S x = 1 := by
+private lemma chi_sq (S : Finset (Fin n)) (x : Fin n → ZMod 2) : χ S x * χ S x = 1 := by
   unfold χ; split_ifs <;> norm_num
 
 /-- Flipping coordinate `i` (adding `Pi.single i 1`) negates `χ_S` when `i ∈ S`, and fixes it
@@ -315,7 +315,7 @@ noncomputable def ansPar (φ S : Finset (Fin n)) : ℝ :=
 
 /-- The product-of-characters sum vanishes off the diagonal: for `φ ≠ S`, pick `i ∈ φ ∆ S`; the
 coordinate-`i` translation negates exactly one factor, so `∑ = −∑ = 0`. -/
-lemma sum_chi_mul_eq_zero (φ S : Finset (Fin n)) (h : φ ≠ S) :
+private lemma sum_chi_mul_eq_zero (φ S : Finset (Fin n)) (h : φ ≠ S) :
     ∑ x : Fin n → ZMod 2, χ φ x * χ S x = 0 := by
   have hne : (symmDiff φ S).Nonempty := by
     rw [Finset.nonempty_iff_ne_empty, ne_eq, ← Finset.bot_eq_empty, symmDiff_eq_bot]

@@ -64,7 +64,7 @@ def compCode (rg rf : ℕ) : ℕ :=
 @[simp] theorem ap_idCode (n : ℕ) : ap idCode n = Part.some n := by
   simp [idCode, Code.eval_id]
 
-theorem ap_compCode (rg rf n : ℕ) : ap (compCode rg rf) n = (ap rf n).bind (ap rg) := by
+private theorem ap_compCode (rg rf n : ℕ) : ap (compCode rg rf) n = (ap rf n).bind (ap rg) := by
   rw [compCode, ap_encode]; rfl
 
 theorem tracks_id (A : Asm) : Tracks A A idCode id :=
@@ -120,10 +120,10 @@ def leftCode : ℕ := Encodable.encode Code.left
 component of a paired input (`ap_rightCode`). -/
 def rightCode : ℕ := Encodable.encode Code.right
 
-@[simp] theorem ap_leftCode (n : ℕ) : ap leftCode n = Part.some n.unpair.1 := by
+@[simp] private theorem ap_leftCode (n : ℕ) : ap leftCode n = Part.some n.unpair.1 := by
   rw [leftCode, ap_encode]; rfl
 
-@[simp] theorem ap_rightCode (n : ℕ) : ap rightCode n = Part.some n.unpair.2 := by
+@[simp] private theorem ap_rightCode (n : ℕ) : ap rightCode n = Part.some n.unpair.2 := by
   rw [rightCode, ap_encode]; rfl
 
 /-- The first projection is tracked, by `Code.left`. -/
@@ -137,15 +137,15 @@ theorem snd_tracks (A B : Asm) :
   fun _ n hn => ⟨n.unpair.2, by rw [ap_rightCode]; exact Part.mem_some _, hn.2⟩
 
 /-- Pairing realizer code from the two component realizers. -/
-def pairCode (rf rg : ℕ) : ℕ :=
+private def pairCode (rf rg : ℕ) : ℕ :=
   Encodable.encode (Code.pair (Denumerable.ofNat Code rf) (Denumerable.ofNat Code rg))
 
-theorem ap_pairCode (rf rg n : ℕ) :
+private theorem ap_pairCode (rf rg n : ℕ) :
     ap (pairCode rf rg) n = (Nat.pair <$> ap rf n <*> ap rg n) := by
   rw [pairCode, ap_encode]; rfl
 
 /-- Pairing of tracked maps is tracked. -/
-theorem pair_tracks {A B C : Asm} {rf rg : ℕ}
+private theorem pair_tracks {A B C : Asm} {rf rg : ℕ}
     {f : C.carrier → A.carrier} {g : C.carrier → B.carrier}
     (hf : Tracks C A rf f) (hg : Tracks C B rg g) :
     Tracks C (prodAsm A B) (pairCode rf rg) (fun c => (f c, g c)) := by
@@ -191,7 +191,7 @@ theorem ev_tracks (A B : Asm) :
 /-- A currying realizer code: a single code `L` with `L · rc = ⌜curry (ofNat rh) rc⌝` — it
 specializes the realizer `rh` of a two-argument map at a realizer `rc` of the first argument.
 Built from Mathlib's primitive-recursive `curry` via `exists_code`. -/
-theorem exists_curry_code (rh : ℕ) :
+private theorem exists_curry_code (rh : ℕ) :
     ∃ L : ℕ, ∀ rc, ap L rc =
       Part.some (Encodable.encode (Code.curry (Denumerable.ofNat Code rh) rc)) := by
   have hcomp : Computable

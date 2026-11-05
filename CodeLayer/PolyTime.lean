@@ -49,7 +49,7 @@ theorem val_right (n : ℕ) : val right n = n.unpair.2 := rfl
 /-! ## The `Nat.size` fact the output-size bounds need beyond `CodeLayer.Code.SizeArith` -/
 
 /-- `Nat.size (n+1) ≤ Nat.size n + 1`: incrementing lengthens by at most one bit. -/
-theorem size_succ_le (n : ℕ) : Nat.size (n + 1) ≤ Nat.size n + 1 := by
+private theorem size_succ_le (n : ℕ) : Nat.size (n + 1) ≤ Nat.size n + 1 := by
   rw [Nat.size_le]
   have h : n < 2 ^ Nat.size n := Nat.lt_size_self n
   have hpos : 0 < 2 ^ Nat.size n := by positivity
@@ -64,7 +64,7 @@ def PolyBounded (t : ℕ → ℕ) : Prop := ∃ C k : ℕ, ∀ n, t n ≤ C * (N
 /-- Normal form: the additive `+ C` is absorbed into the multiplicative term (as
 `(size n+1)^k ≥ 1`), giving the cleaner `t n ≤ C·(size n+1)^k` shape that `add`/`mul`/`pow` compose
 through. -/
-theorem PolyBounded.exists_mul {t : ℕ → ℕ} (h : PolyBounded t) :
+private theorem PolyBounded.exists_mul {t : ℕ → ℕ} (h : PolyBounded t) :
     ∃ C k, ∀ n, t n ≤ C * (Nat.size n + 1) ^ k := by
   obtain ⟨C, k, hC⟩ := h
   refine ⟨2 * C, k, fun n => ?_⟩
@@ -75,7 +75,7 @@ theorem PolyBounded.exists_mul {t : ℕ → ℕ} (h : PolyBounded t) :
     _ = 2 * C * (Nat.size n + 1) ^ k := by ring
 
 /-- Rebuild `PolyBounded` from the multiplicative normal form. -/
-theorem PolyBounded.of_mul {t : ℕ → ℕ} {C k : ℕ} (h : ∀ n, t n ≤ C * (Nat.size n + 1) ^ k) :
+private theorem PolyBounded.of_mul {t : ℕ → ℕ} {C k : ℕ} (h : ∀ n, t n ≤ C * (Nat.size n + 1) ^ k) :
     PolyBounded t := ⟨C, k, fun n => le_trans (h n) (Nat.le_add_right _ _)⟩
 
 theorem PolyBounded.const (a : ℕ) : PolyBounded (fun _ => a) := ⟨a, 0, fun n => by simp⟩
@@ -478,7 +478,7 @@ private theorem wcg_val (x : ℕ) : val wcg x = (x.unpair.2).unpair.2 := by
 
 /-- The per-step cost of `wcg` grows LINEARLY with the iteration index `i = (x.unpair.2).unpair.1`
 (the nested inner loop runs `i` times), so it is not uniformly bounded over all `x`. -/
-theorem wcg_tc_le (x : ℕ) : tc wcg x ≤ 2 * (x.unpair.2).unpair.1 + 14 := by
+private theorem wcg_tc_le (x : ℕ) : tc wcg x ≤ 2 * (x.unpair.2).unpair.1 + 14 := by
   have hEi : val (pair zero (comp left right)) x = Nat.pair 0 ((x.unpair.2).unpair.1) := by
     simp only [val_pair, val_zero, val_comp, val_left, val_right]
   have hinner := tc_prec_le (cf := zero) (cg := zero) (B := 1)
@@ -488,7 +488,7 @@ theorem wcg_tc_le (x : ℕ) : tc wcg x ≤ 2 * (x.unpair.2).unpair.1 + 14 := by
   omega
 
 /-- The loop carries its seed unchanged: `prec (pair left right) wcg` on `⟨a, m⟩` returns `a`. -/
-theorem wloop_const (a m : ℕ) : val (prec (pair left right) wcg) (Nat.pair a m) = a := by
+private theorem wloop_const (a m : ℕ) : val (prec (pair left right) wcg) (Nat.pair a m) = a := by
   induction m with
   | zero => rw [val_prec_zero, val_pair, val_left, val_right, Nat.pair_unpair]
   | succ k ih => rw [val_prec_succ, wcg_val]; simpa only [Nat.unpair_pair] using ih

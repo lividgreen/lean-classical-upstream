@@ -55,7 +55,7 @@ open TimeCost
 /-- Every `prec` runs at least `n` unit steps on `Nat.pair a n` (each of the `n` successor
 unfoldings charges `+1`). A magnitude-INDEPENDENT lower bound — the mirror of `tc_prec_le'`'s upper
 bound. -/
-theorem tc_prec_ge (cf cg : Code) (a : ℕ) : ∀ n, n ≤ tc (prec cf cg) (Nat.pair a n) := by
+private theorem tc_prec_ge (cf cg : Code) (a : ℕ) : ∀ n, n ≤ tc (prec cf cg) (Nat.pair a n) := by
   intro n
   induction n with
   | zero => omega
@@ -63,7 +63,7 @@ theorem tc_prec_ge (cf cg : Code) (a : ℕ) : ∀ n, n ≤ tc (prec cf cg) (Nat.
 
 /-- The identity VALUE is not poly-bit: `¬ PolyBounded (fun n => n)` (the family `n = 2^j` outgrows
 every polynomial in `Nat.size n`). Reuses `exists_two_pow_gt_poly`. -/
-theorem id_not_polyBounded : ¬ PolyBounded (fun n => n) := by
+private theorem id_not_polyBounded : ¬ PolyBounded (fun n => n) := by
   rintro ⟨C, k, h⟩
   obtain ⟨j, hj⟩ := exists_two_pow_gt_poly C k
   have hN : (2 : ℕ) ^ j ≤ C * (Nat.size (2 ^ j) + 1) ^ k + C := h (2 ^ j)
@@ -79,7 +79,8 @@ returns the previous index, i.e. `n - 1`. It first pairs `⟨0, n⟩` (the shape
 `pair zero (pair left right)`). -/
 def cPred : Code := comp (prec zero (comp left right)) (pair zero (pair left right))
 
-theorem val_precpred (m : ℕ) : val (prec zero (comp left right)) (Nat.pair 0 m) = m - 1 := by
+private theorem val_precpred (m : ℕ) :
+    val (prec zero (comp left right)) (Nat.pair 0 m) = m - 1 := by
   cases m with
   | zero => rw [val_prec_zero]; rfl
   | succ k => rw [val_prec_succ]; simp [val_comp, val_left, val_right, Nat.unpair_pair]
@@ -136,11 +137,11 @@ def WF (inst : ℕ) : Prop :=
 theorem left_le_pair (a b : ℕ) : a ≤ Nat.pair a b := by
   have := Nat.unpair_left_le (Nat.pair a b); rwa [Nat.unpair_pair] at this
 
-theorem right_le_pair (a b : ℕ) : b ≤ Nat.pair a b := by
+private theorem right_le_pair (a b : ℕ) : b ≤ Nat.pair a b := by
   have := Nat.unpair_right_le (Nat.pair a b); rwa [Nat.unpair_pair] at this
 
 /-- Each flag-cons cell is at least twice its tail: `2·r ≤ Nat.pair 1 (Nat.pair e r)`. -/
-theorem flagcons_ge (e r : ℕ) : 2 * r ≤ Nat.pair 1 (Nat.pair e r) := by
+private theorem flagcons_ge (e r : ℕ) : 2 * r ≤ Nat.pair 1 (Nat.pair e r) := by
   have hry : r ≤ Nat.pair e r := right_le_pair e r
   set y := Nat.pair e r with hy
   unfold Nat.pair
@@ -151,7 +152,8 @@ theorem flagcons_ge (e r : ℕ) : 2 * r ≤ Nat.pair 1 (Nat.pair e r) := by
 
 /-- Generic strict-`Nat.size` growth: `1 ≤ c` and `2·r ≤ c` give `Nat.size r < Nat.size c`. Via
 `Nat.lt_size`: reduces to `2 ^ Nat.size r ≤ c`, and `2 ^ Nat.size r ≤ 2·r ≤ c` for `r ≥ 1`. -/
-theorem size_lt_of_two_mul_le {c r : ℕ} (hc : 1 ≤ c) (h : 2 * r ≤ c) : Nat.size r < Nat.size c := by
+private theorem size_lt_of_two_mul_le {c r : ℕ} (hc : 1 ≤ c) (h : 2 * r ≤ c) :
+    Nat.size r < Nat.size c := by
   apply Nat.lt_size.mpr
   rcases Nat.eq_zero_or_pos r with hr | hr
   · subst hr; simpa using hc
@@ -177,7 +179,7 @@ theorem isList_len_le_size : ∀ {L m : ℕ}, IsList L m → m ≤ Nat.size L :=
 theorem readData_le (inst : ℕ) : readData inst ≤ inst :=
   le_trans (Nat.unpair_right_le _) (Nat.unpair_right_le _)
 
-theorem firstFV_le (inst : ℕ) : firstFV inst ≤ inst := by
+private theorem firstFV_le (inst : ℕ) : firstFV inst ≤ inst := by
   have e1 : firstFV inst ≤ firstExample inst := Nat.unpair_right_le _
   have e2 : firstExample inst ≤ (readData inst).unpair.2 := Nat.unpair_left_le _
   have e3 : (readData inst).unpair.2 ≤ readData inst := Nat.unpair_right_le _
@@ -247,7 +249,7 @@ theorem val_cPeel (L i : ℕ) : val cPeel (Nat.pair L i) = peel L i := by
 theorem tailL_le (L : ℕ) : tailL L ≤ L :=
   le_trans (Nat.unpair_right_le _) (Nat.unpair_right_le _)
 
-theorem peel_le (L i : ℕ) : peel L i ≤ L := by
+private theorem peel_le (L i : ℕ) : peel L i ≤ L := by
   unfold peel
   induction i with
   | zero => simp
@@ -283,7 +285,7 @@ theorem polyTime_peel {A C : ℕ → ℕ} (hA : PolyTime A) (hC : PolyTime C) (h
   rw [tc_cTailStep]
 
 /-- `headL` is `PolyTime` (a flat `left ∘ right` read). -/
-theorem polyTime_headL : PolyTime headL := by
+private theorem polyTime_headL : PolyTime headL := by
   unfold headL; exact polyTime_comp polyTime_left polyTime_right
 
 /-- **`getExample` is `PolyTime`** given a poly-bit index: `n ↦ headL (peel (A n) (C n))`. -/
@@ -315,7 +317,7 @@ def encodeList : List ℕ → ℕ
   | [] => 0
   | (x :: xs) => Nat.pair 1 (Nat.pair x (encodeList xs))
 
-theorem isList_encode (xs : List ℕ) : IsList (encodeList xs) xs.length := by
+private theorem isList_encode (xs : List ℕ) : IsList (encodeList xs) xs.length := by
   induction xs with
   | nil => exact IsList.nil
   | cons x xs ih => exact IsList.cons x (encodeList xs) xs.length ih
@@ -326,13 +328,14 @@ theorem headL_encode_cons (x : ℕ) (xs : List ℕ) : headL (encodeList (x :: xs
 theorem tailL_encode_cons (x : ℕ) (xs : List ℕ) : tailL (encodeList (x :: xs)) = encodeList xs := by
   simp [tailL, encodeList, Nat.unpair_pair]
 
-theorem tailL_zero : tailL 0 = 0 := by simp [tailL, Nat.unpair_zero]
+private theorem tailL_zero : tailL 0 = 0 := by simp [tailL, Nat.unpair_zero]
 
-theorem peel_zero (i : ℕ) : peel 0 i = 0 := by
+private theorem peel_zero (i : ℕ) : peel 0 i = 0 := by
   unfold peel; exact Function.iterate_fixed tailL_zero i
 
 /-- **Peel = drop.** Peeling `i` cells off an encoded list drops its first `i` elements. -/
-theorem peel_encode (i : ℕ) : ∀ xs : List ℕ, peel (encodeList xs) i = encodeList (xs.drop i) := by
+private theorem peel_encode (i : ℕ) :
+    ∀ xs : List ℕ, peel (encodeList xs) i = encodeList (xs.drop i) := by
   induction i with
   | zero => intro xs; simp [peel]
   | succ k ih =>

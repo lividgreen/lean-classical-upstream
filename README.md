@@ -282,11 +282,21 @@ docstring carries the full statement and its boundary.
   next value is, from some step on, a fixed function of its value and of an
   eventually periodic input is eventually periodic
   (`eventuallyPeriodic_of_driven`).
+- **Edge periods** (`EdgePeriods.lean`): a triangular system over the two-element
+  field, cell `j` rewritten as itself plus a function of the cells below it,
+  has every prefix purely periodic with least period a power of two, the period
+  at width `m + 1` the period at `m` or twice it, and the cell `m` complemented
+  over one period exactly at a doubling (`prefixPeriod_succ_eq_or_eq_two_mul`,
+  `prefixPeriod_eq_two_pow`, `apply_add_prefixPeriod_of_eq_two_mul`): Rowland's
+  statement at the right bijective rules (2006, §2, Lemmas 1 and 2) and Gravner
+  and Griffeath's at the edge cellular automata (2012, §2.3).
 - **Columns of a local rule on the line** (`LocalRuleColumns.lean`): for any
   local rule over a finite alphabet and any configuration of the line, the
   columns between two eventually periodic columns are eventually periodic
   (`eventuallyPeriodic_column_between`); rule `90` after `2^j` steps is the sum
-  of the cells `2^j` away (`iterate_two_pow_step90`); and from the single seed
+  of the cells `2^j` away (`iterate_two_pow_step90`), and any linear rule after `2^j`
+  steps is its own combination of the cells `2^j` away, the Frobenius identity in
+  characteristic two (`iterate_two_pow_step_linear`); and from the single seed
   its column at cell `1` is not eventually periodic
   (`not_eventuallyPeriodic_column_step90_single_one`).
 - **Pascal's triangle modulo two** (`PascalColumns.lean`): from the single seed,
@@ -298,6 +308,41 @@ docstring carries the full statement and its boundary.
   `2m` share no binary digit (`choose_three_mul_mod_two_eq_one_iff`), which is
   to say when `m` has no two adjacent binary ones (`and_two_mul_eq_zero_iff`):
   the comment of entry A003714 of the OEIS.
+- **Rule `22` in the sparse regime** (`Rule22Sparse.lean`): on a configuration
+  whose set cells all lie in one coset of `4ℤ` (`SupportInCoset`), one step of
+  rule `22` is the sum of the three cells (`step_rule22_eq_of_supportInCoset`),
+  two steps are two steps of rule `90` and the image lies in one coset again
+  (`iterate_step_rule22_two_eq_rule90`, `supportInCoset_iterate_step_rule90_two`),
+  so the two orbits agree at every even time
+  (`iterate_step_rule22_two_mul_eq_rule90`); from the single cell the row at
+  time `2j` is rule `90`'s (`iterate_step_rule22_two_mul_single`), which is
+  rule `90`'s row at time `j` with every distance doubled
+  (`iterate_step_rule90_two_mul_single_even`,
+  `iterate_step_rule90_two_mul_single_odd`): the closed form
+  `Q_{2j} = (x² + x⁻²)^j` of Chan-López and Martín-Ruiz (2026, §3), with its
+  induction step stated on every such configuration, and their odd row, the
+  row at time `2j + 1` as the even row times `x⁻¹ + 1 + x`, the three-cell sum
+  (`iterate_step_rule22_odd_single`). The coset hypothesis is load-bearing at
+  the two cells `0` and `2` (`not_iterate_step_rule22_two_eq_rule90_off_coset`).
+  On a configuration clear at the odd cells, two steps of rule `22` leave the odd
+  cells clear and read at the even ones Jen's rule `146` (`rule146`) on the
+  *reduction*, the configuration read at the even cells (`reduction`,
+  `iterate_step_rule22_two_reduction`), at every even time
+  (`iterate_step_rule22_two_mul_reduction`): Lemma 3.1 of Gravner and Griffeath
+  (2010), there on states of isolated set cells with odd clear blocks between
+  them. The hypothesis is load-bearing at the cells `0` and `1`
+  (`not_iterate_step_rule22_two_reduction_off_even`).
+- **Rule `18` creates no kinks** (`Rule18Kinks.lean`): a *kink* of a configuration
+  over `ZMod 2` is a set cell whose next set cell lies at odd distance, the word
+  `1 0^(2n) 1` (`kinkSet`, `kinks`; `kinkSet_finite` keeps the count honest on a
+  finitely supported configuration), and one step of rule `18` never increases
+  the number of kinks of a finitely supported configuration
+  (`kinks_step_rule18_le`; Sabrié and Törmä 2023, §4, after Kůrka 2003, their
+  statement on words and this its instance at the word padded with two clear
+  cells on each side), proved for every local rule agreeing with rule `90` on
+  the five neighbourhoods without two adjacent set cells that sends at most one
+  of `011` and `110` to one (`kinks_step_le_of_agree`), by pairing each set cell
+  of the image with a set cell of the configuration at distance one.
 - **The classes of the elementary rules** (`ElementaryRuleClasses.lean`): the
   elementary rule of a Wolfram number (`elementaryRule`), the numbers of the
   rule read right to left and of its conjugate under the exchange of `0` and
@@ -381,7 +426,10 @@ in existence; corrections are welcome as issues.
 | `ErgodicTheory` | `ErgodicTheory.Birkhoff.PointwiseBirkhoff` | ported | the pointwise ergodic theorem (Birkhoff 1931), vendored from [lua-vr/pointwise-birkhoff](https://github.com/lua-vr/pointwise-birkhoff) | that repository; not in Mathlib |
 | `ErgodicTheory` | `MarkovHoeffding`, `MixingHoeffding` | formalized | Hoeffding's bound for a finite-state Markov chain under a spectral gap (Fan, Jiang and Sun 2021) | — |
 | `ErgodicTheory` | `DrivenColumns` | formalized | a finite system driven by an eventually periodic input is eventually periodic (Endrullis, Hendriks and Klop 2011) | — |
-| `ErgodicTheory` | `LocalRuleColumns` | formalized | a local rule on the line: the columns between two eventually periodic columns are eventually periodic (Jen 1990, §3); rule `90` after `2^j` steps is the sum of the cells `2^j` away (Wolfram 1983); its column beside the single seed's center is not eventually periodic (Jen 1990, Proposition 2) | — |
+| `ErgodicTheory` | `EdgePeriods` | formalized | the prefix periods of a triangular system over the two-element field are powers of two, staying or doubling with the width, the doubled half the complement (Rowland 2006, §2, at every right bijective rule; Gravner and Griffeath 2012, §2.3, at the edge automata, crediting their 2010 paper) | — |
+| `ErgodicTheory` | `LocalRuleColumns` | formalized | a local rule on the line: the columns between two eventually periodic columns are eventually periodic (Jen 1990, §3); rule `90` after `2^j` steps is the sum of the cells `2^j` away (Wolfram 1983), and any linear rule its own combination of the cells `2^j` away, the Frobenius identity in characteristic two (Martin, Odlyzko & Wolfram 1984, Eq. (A.4)), under which rule `60` reproduces every finite pattern (Amoroso & Cooper 1971); its column beside the single seed's center is not eventually periodic (Jen 1990, Proposition 2) | — |
+| `ErgodicTheory` | `Rule22Sparse` | formalized | rule `22` on a configuration supported in one coset of `4ℤ` is rule `90` at every even time, and from a single cell its row at time `2j` is `(x² + x⁻²)^j`, rule `90`'s row `j` with every distance doubled, and its row at time `2j + 1` is that row times `x⁻¹ + 1 + x` (Chan-López and Martín-Ruiz 2026, a preprint, whose induction step on the single-seed orbit is stated here on every such configuration); on a configuration clear at the odd cells two steps of rule `22` are rule `146` on the configuration read at the even cells (Gravner and Griffeath 2010, Lemma 3.1, proved there by a direct verification) | — |
+| `ErgodicTheory` | `Rule18Kinks` | formalized | one step of rule `18` never increases the number of kinks, the words `1 0^(2n) 1`, of a finitely supported configuration (Sabrié and Törmä 2023, §4, after Kůrka 2003; stated there on words, with the proof read off a figure, and proved here through an anchor of each image cell for every rule agreeing with rule `90` off adjacent cells that sends at most one of `011` and `110` to one) | — |
 | `ErgodicTheory` | `ElementaryRuleClasses` | formalized | the 256 elementary rules fall into 88 classes under reflection and complementation, of sizes one, two and four numbering 8, 36 and 44 (Li and Packard 1990; the numbering is Wolfram's, 1983) | — |
 | `ErgodicTheory` | `NumberConservation` | formalized | among the quiescent elementary rules exactly rules 170, 184, 204, 226 and 240 conserve the number of ones, and a rule with a flux conserves it (Boccara and Fukś 1998, 2002, there on cyclic configurations; here on finitely supported ones) | — |
 | `ErgodicTheory` | `PascalColumns` | formalized | rule `90` from a single cell is Pascal's triangle modulo two (Wolfram 1983), `C(a + b, a)` is odd exactly when `a` and `b` share no binary digit (Lucas 1878, at the prime two), and `C(3m, m)` is odd exactly when `m` has no two adjacent binary ones (a comment of entry A003714 of the OEIS) | Mathlib has Lucas's congruence and no statement at the prime two, nor the parity of `C(3m, m)`; Rocq has the rule-`60` form |
@@ -413,7 +461,7 @@ in existence; corrections are welcome as issues.
 
 - No `sorry`, `admit`, or `native_decide`; standard axioms only
   (`propext`, `Classical.choice`, `Quot.sound`).
-- **Build-enforced axiom hygiene**: 253 `#guard_msgs in #print axioms` guards
+- **Build-enforced axiom hygiene**: 281 `#guard_msgs in #print axioms` guards
   assert each capstone's exact axiom set — most in an audit module per library
   root and the Birkhoff port's own, the rest in-file in the modules they
   certify; `lake build` fails on any drift.
