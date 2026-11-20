@@ -7,14 +7,14 @@
 [![License](https://img.shields.io/badge/license-Apache--2.0-lightgrey)](LICENSE)
 
 **Classical theorems of algorithmic information theory, learning theory,
-information theory, ergodic theory and realizability, machine-checked in Lean 4
+information theory, ergodic theory, realizability and combinatorics, machine-checked in Lean 4
 with Mathlib.** Every statement here is one the literature already makes; what
 this repository adds is its proof in Lean, under an axiom audit that the build
 enforces.
 
 ## What it holds
 
-Eight library roots, one per field, each built and imported on its own name:
+Nine library roots, one per field, each built and imported on its own name:
 
 - `AIT` — plain, time-bounded and prefix Kolmogorov complexity, algorithmic
   probability, Levin's coding theorem, the Kraft–Chaitin assignment and
@@ -32,6 +32,8 @@ Eight library roots, one per field, each built and imported on its own name:
 - `ShannonInfo` — entropy and mutual information on finite types, data
   processing and Fano's inequality.
 - `Realizability` — the category of assemblies over Kleene's first algebra.
+- `Combinatorics` — Erdős's condition for property B, the two-colourability of
+  a family of finite sets.
 - `CodeLayer` — what the others stand on: a self-delimiting serialization of
   Mathlib's `Nat.Partrec.Code`, binary Kraft bounds, and a step-counting cost
   model.
@@ -209,7 +211,11 @@ docstring carries the full statement and its boundary.
   in its own module — a primitive-recursive parser of the serialization with
   its two-way specification (`eParserSpec`) and the computable enumeration of
   "`KB(s) ≤ n`" (`rePred_kleB`) — the hypotheses' joint satisfiability
-  witnessed at `𝗣𝗔⁻` (`chaitin_theorem_KB_nonvacuous`). Boundary: the enumerator is of the
+  witnessed at `𝗣𝗔⁻` (`chaitin_theorem_KB_nonvacuous`). The abstract bound is
+  also stated uniformly in a parameter (`ChaitinBoundParam.lean`,
+  `chaitin_bound_KB_param`): for a program `E` read as a family of
+  enumerators, one constant serves every parameter `z`, the family's claims
+  at `z`, when all true, lying below the constant plus `KB z`. Boundary: the enumerator is of the
   theorems, not the axioms; the constant is named, not computed.
 - **A progression of theories** (`TheoryProgression.lean`,
   `SentenceSelector`, `selectedSentence_true`, `selectedSentence_unprovable`,
@@ -232,6 +238,22 @@ docstring carries the full statement and its boundary.
   by a net that needs no identifiability (`version_space_net_envelope`), and
   parity's `2^n` lower bound on the dimension from the orthogonality of
   characters.
+
+- **Blum's elimination learner over the parities**
+  (`ParityElimination.lean`): on `cslib-frontier`'s mistake-bound model, the
+  learner that keeps one equation per miss and predicts by a parity
+  satisfying them has mistake bound at most `n` over the parities on `n`
+  bits (`mistakeBound_learner_le`; Blum 1998,
+  §4).
+
+- **The dual Helly lower bound** (`DualHelly.lean`): on `cslib-frontier`'s
+  mistake-bound model, a learner whose hypotheses after the realizable
+  histories lie in a class `H` makes `m` mistakes on some realizable sequence
+  whenever a set of examples that no member of `H` fits has every `m` of its
+  examples fitted by one concept (`exists_mistakes_eq`, `le_mistakeBound`),
+  and errs at every round against a concept that no member of `H` equals
+  (`exists_stream_mistakes_eq`); the `K − 1` bound of Hanneke, Livni and
+  Moran (2021, Remark 1), `K` the dual Helly number.
 
 - **A learner verified correct and polynomial-step at once**
   (`DecisionListSolver.lean`): the step model carries a greedy decision-list
@@ -262,6 +284,12 @@ docstring carries the full statement and its boundary.
   Mathlib (whose Doob maximal inequality is submartingale-only).
 - **Information theory on finite types** (`FiniteInfoTheory.lean`): the
   data-processing inequality and Fano's inequality.
+- **Guessing the bits of a string from a short message** (`BitGuessing.lean`):
+  for a uniform string of `N` bits and a message about it from an alphabet
+  `V`, guessers of each bit that read the message and the earlier bits alone
+  (`Causal`) are right on at most `N/2 + √(N ln |V| / 2)` bits on average
+  (`sum_hits_le`), by the chain rule for relative entropy, Pinsker's
+  inequality at each bit and the Cauchy–Schwarz inequality.
 - **Codes and their lengths** (`AdditiveComplexity.lean`,
   `BinaryConstant.lean`, `BinaryKraft.lean`, `PrefixComplexity.lean`): an
   additive self-delimiting program-length measure, a code of logarithmic
@@ -271,6 +299,11 @@ docstring carries the full statement and its boundary.
 - An integrated port of the **pointwise Birkhoff ergodic theorem** (from
   [lua-vr/pointwise-birkhoff](https://github.com/lua-vr/pointwise-birkhoff),
   Apache-2.0 — see NOTICE).
+- A port of **`cslib-frontier`'s probability modules** behind Holenstein's
+  Corollary 4.3 (`ShannonInfo/CslibFrontier/`, Apache-2.0 — see NOTICE): the
+  frontier's own files with the renames this toolchain needs, kept under the
+  frontier's namespaces and dropped for its modules once this package is on
+  its toolchain.
 
 - **Hoeffding for finite-state Markov chains under a spectral gap**
   (`MarkovHoeffding.lean`, `MixingHoeffding.lean`): every finite-state chain
@@ -339,10 +372,36 @@ docstring carries the full statement and its boundary.
   the number of kinks of a finitely supported configuration
   (`kinks_step_rule18_le`; Sabrié and Törmä 2023, §4, after Kůrka 2003, their
   statement on words and this its instance at the word padded with two clear
-  cells on each side), proved for every local rule agreeing with rule `90` on
-  the five neighbourhoods without two adjacent set cells that sends at most one
-  of `011` and `110` to one (`kinks_step_le_of_agree`), by pairing each set cell
+  cells on each side), proved for every local rule sending `000` and `010` to
+  zero and at most one of `011` and `110` to one (`kinks_step_le`; its instance
+  at the rules agreeing with rule `90` on the five neighbourhoods without two
+  adjacent set cells is `kinks_step_le_of_agree`), by pairing each set cell
   of the image with a set cell of the configuration at distance one.
+- **The parity of the kinks of rule `18`** (`Rule18Annihilation.lean`): on a
+  finitely supported configuration the number of kinks has the parity of the
+  support's width (`Rule18Kinks.kinks_mod_two_of_extremes`), so one step of rule
+  `18`, which widens the support by one cell at each end, keeps it
+  (`Rule18Kinks.kinks_step_rule18_mod_two`), and a configuration with no kink is
+  of one parity (`Rule18Kinks.even_sub_of_kinks_eq_zero`); the kink
+  annihilation that Sabrié and Törmä (2023, §4) state and credit to Jen (1990) is
+  stated as `Rule18Kinks.JenAnnihilation` and proved in `Rule18Lift.lean`.
+- **Jen's kink annihilation, through a lift to rule `90`**
+  (`Rule18Lift.lean`): every finitely supported configuration has, after some
+  number of steps of rule `18`, at most one kink (`Rule18Kinks.jenAnnihilation`).
+  The lift of a configuration inserts one clear cell into
+  the gap of each kink (`kinksBelow`, `lift`; the map Jen (1990) calls `G`), and
+  `Rule18Kinks.jenAnnihilation_of_lift` proves `JenAnnihilation` from four
+  statements, each proved (`liftConjugacy`, `leftmostKinkStep`,
+  `rightmostKinkStep`, `liftKinkCells`): that the lift turns a step of rule `18`
+  keeping the kink count into a step of rule `90` (`LiftConjugacy`), how the
+  leftmost and the rightmost kink move in one step (`LeftmostKinkStep`,
+  `RightmostKinkStep`, over `IsLeftmostKink` and `IsRightmostKink`), and where
+  the lift puts those kinks and the configuration (`LiftKinkCells`). Were the
+  count `c ≥ 2` kept for a power of two `T ≥ D (D + 1)` steps, `D` the lift's
+  width, rule `90`'s doubling would split the lift into two copies, while the
+  outermost kinks lie at least `D` inside the support's ends, which the order
+  of the two kinks forbids. No published proof of the annihilation was found,
+  and this proof is not Sabrié and Törmä's or Jen's.
 - **The classes of the elementary rules** (`ElementaryRuleClasses.lean`): the
   elementary rule of a Wolfram number (`elementaryRule`), the numbers of the
   rule read right to left and of its conjugate under the exchange of `0` and
@@ -381,6 +440,20 @@ docstring carries the full statement and its boundary.
   subobject classifier and equalizers (`classifier_universal`, `chi_unique`,
   `equalizer_universal`).
 
+### `Combinatorics` — property B and binomial sums
+
+- **Erdős's count of two-colourings** (`PropertyB.lean`): a family of finite
+  sets of at least two points each, the sum of `2^(−|A_i|)` over which is at
+  most one half, has property B, some set meeting every member and containing
+  none (`PropertyB.of_sum_le`, Erdős 1963, Theorem 1); so at most `2^(p − 1)`
+  sets of at least `p ≥ 2` points have it (`PropertyB.of_card_le_two_pow`).
+  The three pairs of three points, at sum three quarters, and a single point
+  have no property B (`PropertyB.not_three_pairs`, `PropertyB.not_singleton`).
+- **The binomial sum bound** (`BinomialSum.lean`): for `1 ≤ k ≤ n`, the sum of
+  the binomial coefficients `n choose i` over `i ≤ k` is at most `(e n / k)^k`
+  (`Nat.sum_range_succ_choose_le_exp_mul_div_pow`), from each term's bound by
+  `n^i / i!` and the exponential series.
+
 ## The labels, and where each result stands in Lean
 
 Each module carries one of three labels.
@@ -398,13 +471,27 @@ Each module carries one of three labels.
 Helper modules — lemmas no one wrote down that a classical proof needs — carry
 no label: they travel with the theorems whose proofs use them.
 
+The algorithmic-information modules labelled duplicated stay, and why:
+Milovanov's library, their original, builds with this package's toolchain but
+is not on Lean's module system, and a module file cannot import a file that is
+not a module; its theorems are also stated over every optimal prefix machine,
+so ours would reach them only through bridge lemmas not yet written. They are
+removed in its favour once both obstacles are gone.
+
 The prior-art column was read at the sources on 2026-10-08: Milovanov's
 [`kolmogorov-complexity-lean`](https://github.com/AlexeyMilovanov/kolmogorov-complexity-lean),
 [`algorithmic-randomness`](https://github.com/cameronfreer/algorithmic-randomness) of Freer,
 the Ville proofs in `athanor-ai/pythia`, `RemyDegenne/entropy-mdp` and
 `Jiyuan-Tan/CausalSmith`, `Vilin97/lean-pool`, `leanprover/cslib`, and the
 pinned Mathlib; Holden's [timed-kt](https://github.com/nickroci/timed-kt),
-found later, was read on 2026-10-13. A label is a claim about that search, not about every Lean file
+found later, was read on 2026-10-13, and the `Combinatorics` row's search for property B in Lean and Isabelle was made on 2026-11-08.
+The whole column was read again on 2026-11-17, adding
+[`cslib-frontier`](https://github.com/cslib-community/cslib-frontier),
+Facebook Research's `atlas-lean`, `LeanMachineLearning/LMLExplore`,
+`marcmorningstar/lean4-ergodic-theory`, `TOTBWF/lean-rz`, Wolfram Institute's
+Rule30PrizeKit, `lhallee/rule30-open`, `DigitalEuan/GLM` and Mathlib's master;
+a library dated after the module it names is marked "later than this module".
+A label is a claim about that search, not about every Lean file
 in existence; corrections are welcome as issues.
 
 | Root | Module | Label | Statement, and its source | In Lean elsewhere |
@@ -412,30 +499,38 @@ in existence; corrections are welcome as issues.
 | `CodeLayer` | `AdditiveComplexity`, `SerializationParse`, `PrefixInvariance` | helper | a self-delimiting serialization of `Nat.Partrec.Code` (a prefix code in Łukasiewicz's sense), its parser, and the invariance of its length | — |
 | `CodeLayer` | `BinaryConstant` | helper | a code of length `O(log n)` for the constant `n` | — |
 | `CodeLayer` | `BinaryKraft`, `PriorNormalization` | helper | Kraft–McMillan over binary index codes (Kraft 1949; McMillan 1956), bridged from Mathlib's | Mathlib's `InformationTheory/Coding` |
-| `CodeLayer` | `Code.EvalLaws`, `BitStringPrimrec`, `Code.BitGates`, `Code.SizeArith`, `TimeCost`, `PolyTime` | helper | evaluation laws of Mathlib's codes, bit-string computability, Boolean gates as codes, and a step-counting cost model over `Nat.Partrec.Code` | — |
-| `AIT` | `KolmogorovComplexity`, `KolmogorovBitlen` | duplicated | plain complexity on `Nat.Partrec.Code` and its uncomputability (Kolmogorov 1965; Shen, Uspensky and Vereshchagin, ch. 1) | Milovanov |
-| `AIT` | `KolmogorovTimeBounded` | formalized | time-bounded complexity, equal to plain complexity eventually (Li and Vitányi §7.1) | Levin's `Kt`, another time-bounded measure, in timed-kt, later than this module |
+| `CodeLayer` | `Code.EvalLaws`, `BitStringPrimrec`, `Code.BitGates`, `Code.SizeArith`, `TimeCost`, `PolyTime` | helper | evaluation laws of Mathlib's codes at every constructor but the search, bit-string computability, Boolean gates as codes with their cores' certificates and costs public, bit-length arithmetic of pairing and successor, and a step-counting cost model over `Nat.Partrec.Code` with its polynomial-bound predicate and that predicate's normal form | — |
+| `AIT` | `KolmogorovComplexity`, `KolmogorovBitlen` | duplicated | plain complexity on `Nat.Partrec.Code` and its uncomputability (Kolmogorov 1965; Shen, Uspensky and Vereshchagin, ch. 1) | Milovanov; `cslib-frontier`, over its own description methods, with the symmetry of information; `atlas-lean` |
+| `AIT` | `KolmogorovTimeBounded` | formalized | time-bounded complexity, equal to plain complexity eventually (Li and Vitányi §7.1) | Levin's `Kt`, another time-bounded measure, in timed-kt, later than this module; the same eventual equality for any description method in `cslib-frontier`, later than this module |
 | `AIT` | `PrefixMachine`, `PrefixMachinePrimrec`, `PrefixInvarianceKB`, `AlgorithmicProbability`, `CodingTheoremWeak`, `CodingTheoremBitwise`, `CodingTheoremDecoder`, `CodingTheorem`, `KraftChaitin`, `KraftMinimality`, `EliasBound`, `PrefixComplexity`, `PrefixCounting`, `PrefixPairKB`, `PrefixModelCost`, `HaltingProbability` | duplicated | prefix complexity, algorithmic probability, Levin's coding theorem, the Kraft–Chaitin assignment, the textbook inequalities and Chaitin's Ω (Chaitin 1975; Levin 1974; Shen, Uspensky and Vereshchagin, ch. 4 and Thm 100) | Milovanov, over an abstract optimal machine; Freer, a constructed prefix-free machine |
-| `AIT` | `StructureFunction` | ported | the 45° slice `α + h_x(α) ≥ K(x) − O(1)` of the structure function (Vereshchagin and Vitányi 2004) | Milovanov, in the deficiency form with a logarithmic slack, a different statement of the same theory |
-| `ChaitinIncompleteness` | `ChaitinIncompleteness`, `ChaitinPrefix`, `KBEnumerable` | formalized | Chaitin's theorem for `Δ₁` consistent extensions of `𝗥₀`, in the plain and the additive form (Chaitin 1974) | Milovanov, for abstract sound systems; Coquand, in Agda |
+| `AIT` | `StructureFunction` | ported | the 45° slice `α + h_x(α) ≥ K(x) − O(1)` of the structure function (Vereshchagin and Vitányi 2004) | Milovanov, the same inequality with a logarithmic slack and slope one, incomparable with the constant slack here |
+| `ChaitinIncompleteness` | `ChaitinIncompleteness`, `ChaitinPrefix`, `KBEnumerable`, `ChaitinBoundParam` | formalized | Chaitin's theorem for `Δ₁` consistent extensions of `𝗥₀`, in the plain and the additive form (Chaitin 1974) | Milovanov, for abstract sound systems; `cslib-frontier`, for computably enumerable sets of sentences, later than this module; Coquand, in Agda |
 | `ChaitinIncompleteness` | `TheoryProgression` | formalized | finite stages of a progression of theories, each appending a true unprovable sentence (Turing 1939; Feferman 1962) | — |
-| `Learning` | `SQObjects`, `SQOracle`, `SQEnvelope`, `SQBounds` | formalized | the statistical-query model: dimension, oracle simulated from samples, version-space envelope (Kearns 1998; Blum et al. 1994; Szörényi 2009) | lean-pool, the dimension's definition only |
+| `Learning` | `SQObjects`, `SQOracle`, `SQEnvelope`, `SQBounds` | formalized | the statistical-query model: dimension, oracle simulated from samples, version-space envelope (Kearns 1998; Blum et al. 1994; Szörényi 2009) | `cslib-frontier`, the model with a correlational dimension, Szörényi's lower bound and the simulation by samples, later than this module; lean-pool, the dimension's definition |
 | `Learning` | `ConjunctionSolver`, `ConjunctionPredictor`, `DecisionListData`, `DecisionListSolver`, `DecisionListPredictor` | formalized | the conjunctions of Valiant and the decision lists of Rivest, correct and polynomial-step (Valiant 1984; Rivest 1987) | — |
+| `Learning` | `ParityElimination` | formalized | the elimination learner misses at most `n` times over the parities on `n` bits (Blum 1998, §4) | `cslib-frontier`, the halving learner's `log₂` bound, which gives the same count for a learner of another kind |
+| `Learning` | `DualHelly` | formalized | a learner whose hypotheses lie in a class `H` misses at least `K − 1` times, `K` the dual Helly number of the concept class relative to `H` (Hanneke, Livni and Moran 2021, Remark 1, from the equivalence-query literature and Littlestone 1988) | — |
 | `Learning` | `BayesRedundancy` | formalized | the Bayes-mixture redundancy bound and the Hellinger–log inequality | — |
-| `AnytimeValid` | `Ville` | duplicated | Ville's inequality for non-negative supermartingales (Ville 1939) | `athanor-ai/pythia`, `RemyDegenne/entropy-mdp`, `Jiyuan-Tan/CausalSmith`; Freer for tree martingales; not in Mathlib |
-| `ErgodicTheory` | `ErgodicTheory.Birkhoff.PointwiseBirkhoff` | ported | the pointwise ergodic theorem (Birkhoff 1931), vendored from [lua-vr/pointwise-birkhoff](https://github.com/lua-vr/pointwise-birkhoff) | that repository; not in Mathlib |
+| `AnytimeValid` | `Ville` | duplicated | Ville's inequality for non-negative supermartingales (Ville 1939) | `athanor-ai/pythia`, `RemyDegenne/entropy-mdp`, `Jiyuan-Tan/CausalSmith`, `atlas-lean`, `LMLExplore`; Freer for tree martingales; not in Mathlib |
+| `ErgodicTheory` | `ErgodicTheory.Birkhoff.PointwiseBirkhoff` | ported | the pointwise ergodic theorem (Birkhoff 1931), vendored from [lua-vr/pointwise-birkhoff](https://github.com/lua-vr/pointwise-birkhoff) | that repository, `atlas-lean` and `marcmorningstar/lean4-ergodic-theory`; not in Mathlib, whose master has the maximal ergodic theorem |
 | `ErgodicTheory` | `MarkovHoeffding`, `MixingHoeffding` | formalized | Hoeffding's bound for a finite-state Markov chain under a spectral gap (Fan, Jiang and Sun 2021) | — |
 | `ErgodicTheory` | `DrivenColumns` | formalized | a finite system driven by an eventually periodic input is eventually periodic (Endrullis, Hendriks and Klop 2011) | — |
-| `ErgodicTheory` | `EdgePeriods` | formalized | the prefix periods of a triangular system over the two-element field are powers of two, staying or doubling with the width, the doubled half the complement (Rowland 2006, §2, at every right bijective rule; Gravner and Griffeath 2012, §2.3, at the edge automata, crediting their 2010 paper) | — |
-| `ErgodicTheory` | `LocalRuleColumns` | formalized | a local rule on the line: the columns between two eventually periodic columns are eventually periodic (Jen 1990, §3); rule `90` after `2^j` steps is the sum of the cells `2^j` away (Wolfram 1983), and any linear rule its own combination of the cells `2^j` away, the Frobenius identity in characteristic two (Martin, Odlyzko & Wolfram 1984, Eq. (A.4)), under which rule `60` reproduces every finite pattern (Amoroso & Cooper 1971); its column beside the single seed's center is not eventually periodic (Jen 1990, Proposition 2) | — |
+| `ErgodicTheory` | `EdgePeriods` | formalized | the prefix periods of a triangular system over the two-element field are powers of two, staying or doubling with the width, the doubled half the complement (Rowland 2006, §2, at every right bijective rule; Gravner and Griffeath 2012, §2.3, at the edge automata, crediting their 2010 paper) | rule `30`'s edge in Rule30PrizeKit, later than this module |
+| `ErgodicTheory` | `LocalRuleColumns` | formalized | a local rule on the line: the columns between two eventually periodic columns are eventually periodic (Jen 1990, §3); rule `90` after `2^j` steps is the sum of the cells `2^j` away (Wolfram 1983), and any linear rule its own combination of the cells `2^j` away, the Frobenius identity in characteristic two (Martin, Odlyzko & Wolfram 1984, Eq. (A.4)), under which rule `60` reproduces every finite pattern (Amoroso & Cooper 1971); its column beside the single seed's center is not eventually periodic (Jen 1990, Proposition 2) | instances at rule `30` in Rule30PrizeKit and at rule `90`, from the single cell, in `lhallee/rule30-open`, both later than this module |
 | `ErgodicTheory` | `Rule22Sparse` | formalized | rule `22` on a configuration supported in one coset of `4ℤ` is rule `90` at every even time, and from a single cell its row at time `2j` is `(x² + x⁻²)^j`, rule `90`'s row `j` with every distance doubled, and its row at time `2j + 1` is that row times `x⁻¹ + 1 + x` (Chan-López and Martín-Ruiz 2026, a preprint, whose induction step on the single-seed orbit is stated here on every such configuration); on a configuration clear at the odd cells two steps of rule `22` are rule `146` on the configuration read at the even cells (Gravner and Griffeath 2010, Lemma 3.1, proved there by a direct verification) | — |
 | `ErgodicTheory` | `Rule18Kinks` | formalized | one step of rule `18` never increases the number of kinks, the words `1 0^(2n) 1`, of a finitely supported configuration (Sabrié and Törmä 2023, §4, after Kůrka 2003; stated there on words, with the proof read off a figure, and proved here through an anchor of each image cell for every rule agreeing with rule `90` off adjacent cells that sends at most one of `011` and `110` to one) | — |
-| `ErgodicTheory` | `ElementaryRuleClasses` | formalized | the 256 elementary rules fall into 88 classes under reflection and complementation, of sizes one, two and four numbering 8, 36 and 44 (Li and Packard 1990; the numbering is Wolfram's, 1983) | — |
+| `ErgodicTheory` | `Rule18Annihilation` | formalized | the kinks of a finitely supported configuration have the parity of its support's width, kept by a step of rule `18`, and a configuration with no kink is of one parity; Jen's annihilation stated as a proposition, proved in `Rule18Lift` | Sabrié and Törmä (2023, §4) state the parity for stable words; no Lean statement was found |
+| `ErgodicTheory` | `Rule18Lift` | formalized | Jen's kink annihilation for rule `18` (Sabrié and Törmä 2023, §4, crediting Jen 1990), proved through the lift that inserts a clear cell into each kink, the map Jen (1990) calls `G`, which turns a step keeping the kink count into a step of rule `90`; the proof is not theirs | no published proof of the annihilation was found |
+| `ErgodicTheory` | `ElementaryRuleClasses` | formalized | the 256 elementary rules fall into 88 classes under reflection and complementation, of sizes one, two and four numbering 8, 36 and 44 (Li and Packard 1990; the numbering is Wolfram's, 1983) | the count of 88 in Rule30PrizeKit and `DigitalEuan/GLM`, later than this module, without the class sizes |
 | `ErgodicTheory` | `NumberConservation` | formalized | among the quiescent elementary rules exactly rules 170, 184, 204, 226 and 240 conserve the number of ones, and a rule with a flux conserves it (Boccara and Fukś 1998, 2002, there on cyclic configurations; here on finitely supported ones) | — |
-| `ErgodicTheory` | `PascalColumns` | formalized | rule `90` from a single cell is Pascal's triangle modulo two (Wolfram 1983), `C(a + b, a)` is odd exactly when `a` and `b` share no binary digit (Lucas 1878, at the prime two), and `C(3m, m)` is odd exactly when `m` has no two adjacent binary ones (a comment of entry A003714 of the OEIS) | Mathlib has Lucas's congruence and no statement at the prime two, nor the parity of `C(3m, m)`; Rocq has the rule-`60` form |
-| `Realizability` | `Realizability`, `RealizabilityCCC`, `RealizabilityCoproduct`, `RealizabilitySubobject` | formalized | assemblies over Kleene's first algebra: Cartesian closed, finite coproducts, the finite fragment's subobject classifier (van Oosten 2008; Longley 1995) | lean-pool and Bauer: partial combinatory algebras, no assemblies |
-| `ShannonInfo` | `FiniteInfoTheory` | duplicated | finite entropy, mutual and conditional mutual information, data processing, Fano (Shannon 1948; Cover and Thomas) | the PFR project's entropy API, outside Mathlib |
+| `ErgodicTheory` | `PascalColumns` | formalized | rule `90` from a single cell is Pascal's triangle modulo two (Wolfram 1983), `C(a + b, a)` is odd exactly when `a` and `b` share no binary digit (Lucas 1878, at the prime two), and `C(3m, m)` is odd exactly when `m` has no two adjacent binary ones (a comment of entry A003714 of the OEIS) | Mathlib has Lucas's congruence and no statement at the prime two, nor the parity of `C(3m, m)`; Rule30PrizeKit has the prime-two criterion as digit inclusion, later than this module; Rocq has the rule-`60` form |
+| `Realizability` | `Realizability`, `RealizabilityCCC`, `RealizabilityCoproduct`, `RealizabilitySubobject` | formalized | assemblies over Kleene's first algebra: Cartesian closed, finite coproducts, the finite fragment's subobject classifier (van Oosten 2008; Longley 1995) | lean-pool and Bauer: partial combinatory algebras; `TOTBWF/lean-rz`: an assembly class with identity and composition, no closure |
+| `ShannonInfo` | `FiniteInfoTheory` | duplicated | finite entropy, mutual and conditional mutual information, data processing, Fano (Shannon 1948; Cover and Thomas) | the PFR project's entropy API; `cslib-frontier`, over probability mass functions in bits, with the tight Fano bound; `atlas-lean`; not in Mathlib, which has Kullback–Leibler divergence |
+| `ShannonInfo` | `BitGuessing` | formalized | a message of `ln \|V\|` nats about `N` uniform bits lets guessers that read it and the earlier bits be right on at most `N/2 + √(N ln \|V\| / 2)` bits on average, by the chain rule for relative entropy and Pinsker's inequality; the bound for indexing with the string's other bits on one side as side information (Nayak 1999, Theorem 2.3, at every position; Bar-Yossef, Jayram, Krauthgamer and Kumar 2004, Lemma 2, at a uniform position with a window of preceding bits), here averaged over the positions with every earlier bit read, a form neither states | — |
 | `ShannonInfo` | `ChengCCC` | formalized | the necessity bound of Cheng (2026), Theorem 4 | — |
+| `ShannonInfo` | the modules under `ShannonInfo/CslibFrontier/` | ported | probability mass functions on finite types: conditioning, products, entropy, divergence with Pinsker's inequality, statistical distance, and Holenstein's Corollary 4.3 on a product conditioned on an event with side information (Holenstein 2009), vendored from [`cslib-frontier`](https://github.com/cslib-community/cslib-frontier) with the renames this toolchain needs | that library, on a newer Lean; the modules here are dropped for its own once this package is on its toolchain |
+| `Combinatorics` | `PropertyB` | formalized | a family of sets of at least two points, the sum of `2^(−n)` over their sizes `n` at most one half, has property B (Erdős 1963, Theorem 1) | not in Mathlib; Isabelle's Archive of Formal Proofs has the uniform form, for families of sets of one size |
+| `Combinatorics` | `BinomialSum` | formalized | the sum of the binomial coefficients `n choose i` over `i ≤ k` is at most `(e n / k)^k` for `1 ≤ k ≤ n`, a textbook bound | no statement of it was found in Mathlib at the pinned revision, by a search of its binomial bounds |
 
 ## Where the proofs here differ from the literature's
 
@@ -450,8 +545,9 @@ in existence; corrections are welcome as issues.
   an abstract optimal prefix machine; here the machine is built from the
   serialized codes and the theorem is proved over it, on an online
   Kraft–Chaitin assignment verified with its invariant.
-- **The statistical-query model as a model.** Only the dimension's definition
-  existed in Lean; here the oracle, the envelope and the learners are proved,
+- **The statistical-query model as a model.** When this module was written
+  only the dimension's definition existed in Lean, and `cslib-frontier` has
+  formalized the model since; here the oracle, the envelope and the learners are proved,
   and the cost model lets a learner be verified correct and polynomial-step in
   one statement rather than in a program logic beside the mathematics.
 - **Assemblies.** Partial combinatory algebras exist in Lean; the category of
@@ -461,7 +557,7 @@ in existence; corrections are welcome as issues.
 
 - No `sorry`, `admit`, or `native_decide`; standard axioms only
   (`propext`, `Classical.choice`, `Quot.sound`).
-- **Build-enforced axiom hygiene**: 281 `#guard_msgs in #print axioms` guards
+- **Build-enforced axiom hygiene**: 328 `#guard_msgs in #print axioms` guards
   assert each capstone's exact axiom set — most in an audit module per library
   root and the Birkhoff port's own, the rest in-file in the modules they
   certify; `lake build` fails on any drift.
@@ -479,10 +575,10 @@ Pinned toolchain (`lean-toolchain`, `lake-manifest.json`):
 
 ```bash
 lake exe cache get
-lake build CodeLayer AIT ChaitinIncompleteness Learning AnytimeValid ErgodicTheory Realizability ShannonInfo
+lake build CodeLayer AIT ChaitinIncompleteness Learning AnytimeValid ErgodicTheory Realizability ShannonInfo Combinatorics
 ```
 
-As a dependency, with its eight library roots by field:
+As a dependency, with its nine library roots by field:
 
 ```toml
 [[require]]
@@ -492,8 +588,10 @@ rev = "<tag>"  -- pin to a tagged release
 ```
 
 What a root costs to import: `CodeLayer`, `AnytimeValid`, `ErgodicTheory`,
-`Realizability` and `ShannonInfo` import no other root; `Learning` and `AIT`
-import `CodeLayer`; and `ChaitinIncompleteness` imports `AIT` and `CodeLayer`
+`Realizability`, `ShannonInfo` and `Combinatorics` import no other root;
+`Learning` and `AIT` import `CodeLayer`, and `Learning` and `ShannonInfo` import
+[`cslib-frontier`](https://github.com/cslib-community/cslib-frontier) as well,
+the only roots that need it; and `ChaitinIncompleteness` imports `AIT` and `CodeLayer`
 with [Foundation](https://github.com/FormalizedFormalLogic/Foundation), the
 only root that needs it.
 
@@ -515,3 +613,6 @@ and `CITATION.cff`. Code is Apache-2.0 (`LICENSE`); third-party attribution
 in `NOTICE`. Developed by Mykola Palamarchuk (independent researcher), with
 substantial AI assistance (Claude Code, Anthropic) under the author's direction
 and review — every result is machine-checked by Lean.
+
+The program these libraries belong to is described at
+[www.livid.work/projects/reflective-subsystems](https://www.livid.work/projects/reflective-subsystems/).

@@ -24,6 +24,12 @@ unfolding. It is a TOTAL structural recursion on `Code` (the `prec` numeric recu
 not a recursive `evalT` call), so the step laws hold UNCONDITIONALLY — no `Part.Dom` side goals. The
 value it computes carries no cap: `eval c n = Part.some (val c n)` for rfind'-free `c`.
 
+## Public surface
+The paired evaluator `evalT` with its projections `val` and `tc`, the step laws (`tc_pair`,
+`tc_comp`, `tc_prec_zero`, `tc_prec_succ` and the `val` twins), the fragment predicate `RfindFree`
+with the value-agreement theorem `eval_eq_val`, the loop bound `tc_prec_le`, and the space cost
+`spaceCost` with its loop bound `spaceCost_prec_le`.
+
 ## Scope
 Only the rfind'-free fragment (`zero succ left right pair comp prec`), on which `eval` is total.
 `rfind'` is a placeholder `(0, 0)` — OUT of the fragment; value-agreement is stated only for

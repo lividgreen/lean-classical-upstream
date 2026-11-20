@@ -10,6 +10,12 @@ This repository includes code derived from third-party Apache-2.0 work:
     Copyright (c) 2025 Oliver Butterley (and contributors).
     See ErgodicTheory/Birkhoff/LICENSE and the file header for details.
 
+  ShannonInfo/CslibFrontier/Probability/
+    Ported from https://github.com/cslib-community/cslib-frontier
+    Copyright (c) 2026 Samuel Schlesinger, Christian Reitwiessner, Renfei Zhou.
+    See ShannonInfo/CslibFrontier/LICENSE and the file headers for details.
+
 It builds against and pins:
   - Mathlib (Apache-2.0), via lake-manifest.json
   - FormalizedFormalLogic/Foundation (pinned revision; see lake-manifest.json)
+  - cslib-community/cslib-frontier (Apache-2.0; pinned revision; see lake-manifest.json)

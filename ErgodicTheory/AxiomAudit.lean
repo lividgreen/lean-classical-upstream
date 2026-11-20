@@ -6,7 +6,9 @@ public import ErgodicTheory.LocalRuleColumns
 public import ErgodicTheory.NumberConservation
 public import ErgodicTheory.MixingHoeffding
 public import ErgodicTheory.PascalColumns
+public import ErgodicTheory.Rule18Annihilation
 public import ErgodicTheory.Rule18Kinks
+public import ErgodicTheory.Rule18Lift
 public import ErgodicTheory.Rule22Sparse
 
 
@@ -193,6 +195,11 @@ set_option linter.style.longLine false in
 #print axioms Rule18Kinks.kinkSet_finite
 
 set_option linter.style.longLine false in
+/-- info: 'Rule18Kinks.kinks_step_le' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms Rule18Kinks.kinks_step_le
+
+set_option linter.style.longLine false in
 /-- info: 'Rule18Kinks.kinks_step_le_of_agree' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs (whitespace := lax) in
 #print axioms Rule18Kinks.kinks_step_le_of_agree
@@ -201,6 +208,51 @@ set_option linter.style.longLine false in
 /-- info: 'Rule18Kinks.kinks_step_rule18_le' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs (whitespace := lax) in
 #print axioms Rule18Kinks.kinks_step_rule18_le
+
+set_option linter.style.longLine false in
+/-- info: 'Rule18Kinks.kinks_mod_two_of_extremes' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms Rule18Kinks.kinks_mod_two_of_extremes
+
+set_option linter.style.longLine false in
+/-- info: 'Rule18Kinks.kinks_step_rule18_mod_two' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms Rule18Kinks.kinks_step_rule18_mod_two
+
+set_option linter.style.longLine false in
+/-- info: 'Rule18Kinks.even_sub_of_kinks_eq_zero' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms Rule18Kinks.even_sub_of_kinks_eq_zero
+
+set_option linter.style.longLine false in
+/-- info: 'Rule18Kinks.jenAnnihilation_of_lift' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms Rule18Kinks.jenAnnihilation_of_lift
+
+set_option linter.style.longLine false in
+/-- info: 'Rule18Kinks.leftmostKinkStep' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms Rule18Kinks.leftmostKinkStep
+
+set_option linter.style.longLine false in
+/-- info: 'Rule18Kinks.rightmostKinkStep' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms Rule18Kinks.rightmostKinkStep
+
+set_option linter.style.longLine false in
+/-- info: 'Rule18Kinks.liftKinkCells' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms Rule18Kinks.liftKinkCells
+
+set_option linter.style.longLine false in
+/-- info: 'Rule18Kinks.liftConjugacy' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms Rule18Kinks.liftConjugacy
+
+set_option linter.style.longLine false in
+/-- info: 'Rule18Kinks.jenAnnihilation' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms Rule18Kinks.jenAnnihilation
 
 /-- info: 'EdgePeriods.iterate_eq_of_eq_below' depends on axioms: [propext, Quot.sound] -/
 #guard_msgs (whitespace := lax) in

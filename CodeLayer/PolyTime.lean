@@ -16,6 +16,15 @@ Provenance: the native cost model. Builds on `CodeLayer/TimeCost.lean` (`evalT`,
 `Learning/ConjunctionSolver.lean`), including the domain-relative `PolyBoundedOn`/`PolyTimeOn` pair
 both consume for their well-formed-input bounds.
 
+## What the module covers
+The public surface is the predicates `PolyBounded` (a function polynomial in the input bit-length),
+`PolyTime` (an `rfind'`-free code with polynomial step count and output bit-length) and their
+domain-relative forms `PolyBoundedOn` and `PolyTimeOn`, the `PolyBounded` algebra (`add`, `mul`,
+`pow`, `mono`, `comp_le`, `comp_size_le`), and the `PolyTime` closure results `polyTime_pair`,
+`polyTime_comp`, `polyTime_prec`, `polyTime_loop` with a worked example. It also holds the
+blocker `unpair_snd_not_polyBounded`, with its consequence `not_polyBounded_id`, and the constant
+codes `constCode`.
+
 ## HONEST FRAMING — unit cost, measured against input BIT-LENGTH
 `tc` is a UNIT-cost model: each AST primitive costs `1` regardless of operand magnitude. So
 "polynomial `tc`" here means **poly-many AST steps as a function of the INPUT BIT-LENGTH
@@ -64,7 +73,7 @@ def PolyBounded (t : ℕ → ℕ) : Prop := ∃ C k : ℕ, ∀ n, t n ≤ C * (N
 /-- Normal form: the additive `+ C` is absorbed into the multiplicative term (as
 `(size n+1)^k ≥ 1`), giving the cleaner `t n ≤ C·(size n+1)^k` shape that `add`/`mul`/`pow` compose
 through. -/
-private theorem PolyBounded.exists_mul {t : ℕ → ℕ} (h : PolyBounded t) :
+theorem PolyBounded.exists_mul {t : ℕ → ℕ} (h : PolyBounded t) :
     ∃ C k, ∀ n, t n ≤ C * (Nat.size n + 1) ^ k := by
   obtain ⟨C, k, hC⟩ := h
   refine ⟨2 * C, k, fun n => ?_⟩
@@ -75,7 +84,7 @@ private theorem PolyBounded.exists_mul {t : ℕ → ℕ} (h : PolyBounded t) :
     _ = 2 * C * (Nat.size n + 1) ^ k := by ring
 
 /-- Rebuild `PolyBounded` from the multiplicative normal form. -/
-private theorem PolyBounded.of_mul {t : ℕ → ℕ} {C k : ℕ} (h : ∀ n, t n ≤ C * (Nat.size n + 1) ^ k) :
+theorem PolyBounded.of_mul {t : ℕ → ℕ} {C k : ℕ} (h : ∀ n, t n ≤ C * (Nat.size n + 1) ^ k) :
     PolyBounded t := ⟨C, k, fun n => le_trans (h n) (Nat.le_add_right _ _)⟩
 
 theorem PolyBounded.const (a : ℕ) : PolyBounded (fun _ => a) := ⟨a, 0, fun n => by simp⟩
@@ -95,6 +104,27 @@ theorem PolyBounded.comp_le {t u : ℕ → ℕ} (ht : PolyBounded t) (hu : ∀ n
   refine ⟨C, k, fun n => le_trans (hC (u n)) ?_⟩
   gcongr
   exact Nat.size_le_size (hu n)
+
+/-- Composition on the inside with a map whose output bit-length is linear in its input's:
+`Nat.size (u n) ≤ a · Nat.size n + b` keeps a poly-bounded function poly-bounded. -/
+theorem PolyBounded.comp_size_le {t u : ℕ → ℕ} (ht : PolyBounded t) (a b : ℕ)
+    (hu : ∀ n, Nat.size (u n) ≤ a * Nat.size n + b) :
+    PolyBounded (fun n => t (u n)) := by
+  obtain ⟨C, k, hC⟩ := ht
+  refine ⟨C * (a + b + 1) ^ k + C, k, fun n => le_trans (hC (u n)) ?_⟩
+  have h1 : Nat.size (u n) + 1 ≤ (a + b + 1) * (Nat.size n + 1) := by
+    have := hu n
+    nlinarith
+  have h2 : (Nat.size (u n) + 1) ^ k ≤ (a + b + 1) ^ k * (Nat.size n + 1) ^ k := by
+    rw [← mul_pow]; exact Nat.pow_le_pow_left h1 k
+  have h3 : C * (Nat.size (u n) + 1) ^ k ≤ C * ((a + b + 1) ^ k * (Nat.size n + 1) ^ k) :=
+    Nat.mul_le_mul_left C h2
+  have h4 : C * ((a + b + 1) ^ k * (Nat.size n + 1) ^ k)
+      = C * (a + b + 1) ^ k * (Nat.size n + 1) ^ k := by ring
+  have h5 : C * (a + b + 1) ^ k * (Nat.size n + 1) ^ k
+      ≤ (C * (a + b + 1) ^ k + C) * (Nat.size n + 1) ^ k :=
+    Nat.mul_le_mul_right _ (Nat.le_add_right _ _)
+  exact Nat.add_le_add (h3.trans (h4.le.trans h5)) (Nat.le_add_left _ _)
 
 theorem PolyBounded.add {s t : ℕ → ℕ} (hs : PolyBounded s) (ht : PolyBounded t) :
     PolyBounded (fun n => s n + t n) := by
@@ -158,6 +188,23 @@ cheap to run and still emit something exponentially wide. -/
 def PolyTimeOn (D : ℕ → Prop) (f : ℕ → ℕ) : Prop :=
   ∃ c : Code, RfindFree c ∧ (∀ n, D n → val c n = f n) ∧
     PolyBoundedOn D (tc c) ∧ PolyBoundedOn D (fun n => Nat.size (f n))
+
+/-- A polynomially bounded function is polynomially bounded on every domain. -/
+theorem PolyBounded.polyBoundedOn {t : ℕ → ℕ} (D : ℕ → Prop) (h : PolyBounded t) :
+    PolyBoundedOn D t :=
+  let ⟨C, k, hC⟩ := h
+  ⟨C, k, fun n _ => hC n⟩
+
+/-- A `PolyTime` function is `PolyTimeOn` every domain, with the same witnessing code. -/
+theorem PolyTime.polyTimeOn {f : ℕ → ℕ} (D : ℕ → Prop) (h : PolyTime f) : PolyTimeOn D f :=
+  let ⟨c, hc, hv, ht, hs⟩ := h
+  ⟨c, hc, fun n _ => hv n, ht.polyBoundedOn D, hs.polyBoundedOn D⟩
+
+/-- `PolyTime` is invariant under pointwise equality of functions. -/
+theorem PolyTime.congr {f g : ℕ → ℕ} (h : ∀ n, f n = g n) (hf : PolyTime f) : PolyTime g :=
+  let ⟨c, hc, hv, ht, hs⟩ := hf
+  ⟨c, hc, fun n => (hv n).trans (h n), ht,
+    PolyBounded.mono (fun n => (congrArg Nat.size (h n)).symm.le) hs⟩
 
 /-! ## Base closure — `zero`, `succ`, `left`, `right` are `PolyTime` -/
 
@@ -345,6 +392,11 @@ theorem unpair_snd_not_polyBounded : ¬ PolyBounded (fun N => N.unpair.2) := by
     gcongr
   omega
 
+/-- The identity is not poly-bounded: a value is exponential in its own bit-length, which
+`unpair_snd_not_polyBounded` makes precise (the second projection is dominated by the identity). -/
+theorem not_polyBounded_id : ¬ PolyBounded (fun n : ℕ => n) := fun h =>
+  unpair_snd_not_polyBounded (PolyBounded.mono (fun N => Nat.unpair_right_le N) h)
+
 /-! ## Part 2 — the repair: `polyTime_loop`, the usable bounded-recursion closure
 
 The realistic pattern: the loop is `comp (prec cf cg) shaper`, where the shaper computes the packed
@@ -366,6 +418,12 @@ theorem polyTime_id : PolyTime (fun n => n) :=
 def constCode : ℕ → Code
   | 0 => zero
   | (c + 1) => comp succ (constCode c)
+
+/-- `constCode c` is Mathlib's unary constant tower `Code.const c`. -/
+theorem constCode_eq_const (c : ℕ) : constCode c = Code.const c := by
+  induction c with
+  | zero => rfl
+  | succ d ih => simp only [constCode, Code.const, ih]
 
 theorem val_constCode (c n : ℕ) : val (constCode c) n = c := by
   induction c with

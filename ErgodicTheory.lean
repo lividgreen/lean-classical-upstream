@@ -11,7 +11,9 @@ public import ErgodicTheory.MarkovHoeffding
 public import ErgodicTheory.MixingHoeffding
 public import ErgodicTheory.NumberConservation
 public import ErgodicTheory.PascalColumns
+public import ErgodicTheory.Rule18Annihilation
 public import ErgodicTheory.Rule18Kinks
+public import ErgodicTheory.Rule18Lift
 public import ErgodicTheory.Rule22Sparse
 
 /-!

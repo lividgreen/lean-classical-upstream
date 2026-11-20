@@ -134,15 +134,11 @@ def WF (inst : ℕ) : Prop :=
 
 /-! ## Growth: a length-`m` flag-cons list has `Nat.size ≥ m` -/
 
-theorem left_le_pair (a b : ℕ) : a ≤ Nat.pair a b := by
-  have := Nat.unpair_left_le (Nat.pair a b); rwa [Nat.unpair_pair] at this
-
-private theorem right_le_pair (a b : ℕ) : b ≤ Nat.pair a b := by
-  have := Nat.unpair_right_le (Nat.pair a b); rwa [Nat.unpair_pair] at this
+theorem left_le_pair (a b : ℕ) : a ≤ Nat.pair a b := Nat.left_le_pair a b
 
 /-- Each flag-cons cell is at least twice its tail: `2·r ≤ Nat.pair 1 (Nat.pair e r)`. -/
 private theorem flagcons_ge (e r : ℕ) : 2 * r ≤ Nat.pair 1 (Nat.pair e r) := by
-  have hry : r ≤ Nat.pair e r := right_le_pair e r
+  have hry : r ≤ Nat.pair e r := Nat.right_le_pair e r
   set y := Nat.pair e r with hy
   unfold Nat.pair
   split_ifs with h

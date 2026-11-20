@@ -13,18 +13,20 @@ set cell, at odd distance. Sabrié and Törmä (2023, §4), after Kůrka (2003),
 Wolfram's rule `18` does not create kinks in a word: a word with `n` kinks has an image with at
 most `n`. Their proof is read off a discussion and a figure. This module proves the sentence on a
 finitely supported configuration of the line, which is their statement at the word padded with two
-clear cells on each side, and proves it for every local rule agreeing with rule `90` on the five
-neighbourhoods without two adjacent set cells that sends at most one of the neighbourhoods `011`
-and `110` to one.
+clear cells on each side, and proves it for every local rule that fixes `000` and `010` at zero and
+sends at most one of the neighbourhoods `011` and `110` to one, among them the rules agreeing with
+rule `90` on the five neighbourhoods without two adjacent set cells.
 
 ## Main results
 
 * `rule18`, `kinkSet`, `kinks` — Wolfram's rule `18` over `ZMod 2`, the set cells of a
   configuration followed at odd distance by the next set cell, and their number;
   `kinkSet_finite` makes the count honest on finitely supported configurations.
-* `kinks_step_le_of_agree` — **the kink count never increases in one step** of a local rule with
-  the five stated values and not both `011` and `110` sent to one, on a finitely supported
+* `kinks_step_le` — **the kink count never increases in one step** of a local rule that fixes
+  `000` and `010` at zero and does not send both `011` and `110` to one, on a finitely supported
   configuration.
+* `kinks_step_le_of_agree` — the same at a rule with the five values of rule `90` on the
+  neighbourhoods without two adjacent set cells.
 * `kinks_step_rule18_le` — **rule `18` does not create kinks** (Sabrié and Törmä 2023, §4).
 
 The proof pairs each set cell of the image with a set cell of the configuration at distance one,
@@ -113,12 +115,11 @@ private theorem kinks_le_of_anchor {x y : ℤ → ZMod 2} (hx : (Function.suppor
     omega
 
 /-- **The kink count never increases in one step** of a local rule `f` over `ZMod 2` on a finitely
-supported configuration, when `f` takes the values `0` at `000` and `010`, and sends at most one
-of the neighbourhoods `011` and `110` to one. The values `001`, `100` and `101` of rule `90` are
-not used by the proof. -/
-theorem kinks_step_le_of_agree (f : ZMod 2 → ZMod 2 → ZMod 2 → ZMod 2) (h000 : f 0 0 0 = 0)
-    (_h001 : f 0 0 1 = 1) (_h100 : f 1 0 0 = 1) (h010 : f 0 1 0 = 0) (_h101 : f 1 0 1 = 0)
-    (hone : ¬ (f 0 1 1 = 1 ∧ f 1 1 0 = 1)) (x : ℤ → ZMod 2)
+supported configuration, for every `f` that fixes `000` and `010` at zero and sends at most one of
+the neighbourhoods `011` and `110` to one. This is the statement over the whole class of such rules,
+which generalizes Sabrié and Törmä (2023, §4) at rule `18`. -/
+theorem kinks_step_le (f : ZMod 2 → ZMod 2 → ZMod 2 → ZMod 2) (h000 : f 0 0 0 = 0)
+    (h010 : f 0 1 0 = 0) (hone : ¬ (f 0 1 1 = 1 ∧ f 1 1 0 = 1)) (x : ℤ → ZMod 2)
     (hx : (Function.support x).Finite) : kinks (step f x) ≤ kinks x := by
   have z2 : ∀ z : ZMod 2, z = 0 ∨ z = 1 := by decide
   have z1 : ∀ z : ZMod 2, z ≠ 0 → z = 1 := fun z hz => (z2 z).resolve_left hz
@@ -196,6 +197,16 @@ theorem kinks_step_le_of_agree (f : ZMod 2 → ZMod 2 → ZMod 2 → ZMod 2) (h0
             · exact hv h010
             · exact hv hB
         · split_ifs <;> omega
+
+/-- **The kink count never increases in one step** of a local rule `f` over `ZMod 2` on a finitely
+supported configuration, when `f` takes the values `0` at `000` and `010`, and sends at most one
+of the neighbourhoods `011` and `110` to one. The values `001`, `100` and `101` of rule `90` are
+not used by the proof; this is `kinks_step_le` with them as extra hypotheses. -/
+theorem kinks_step_le_of_agree (f : ZMod 2 → ZMod 2 → ZMod 2 → ZMod 2) (h000 : f 0 0 0 = 0)
+    (_h001 : f 0 0 1 = 1) (_h100 : f 1 0 0 = 1) (h010 : f 0 1 0 = 0) (_h101 : f 1 0 1 = 0)
+    (hone : ¬ (f 0 1 1 = 1 ∧ f 1 1 0 = 1)) (x : ℤ → ZMod 2)
+    (hx : (Function.support x).Finite) : kinks (step f x) ≤ kinks x :=
+  kinks_step_le f h000 h010 hone x hx
 
 /-- **Rule `18` does not create kinks** (Sabrié and Törmä 2023, §4, after Kůrka 2003): on a
 finitely supported configuration of the line, one step of rule `18` leaves at most as many kinks as

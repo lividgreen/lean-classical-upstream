@@ -10,9 +10,13 @@ public import Mathlib.Analysis.SpecialFunctions.Log.NegMulLog
 The information-theoretic core of `Cheng, R. (2026)` Theorem 4,
 re-checked in `ShannonInfo/ChengCCC.lean`. That file machine-checks the misidentification /
 forgetting lower bounds *modulo* two named hypotheses — the **data-processing inequality**
-(`I(T;θ) ≤ C_ctx`) and **Fano's inequality** (`P_e ≥ (H(T|θ) − 1)/log(K−1)`). Mathlib has neither
-(only `Real.negMulLog`, the binary-entropy *function*, and topological entropy), so discharging them
-requires building a small finite-discrete information-theory library. This file builds it bottom-up.
+(`I(T;θ) ≤ C_ctx`) and **Fano's inequality** (`P_e ≥ (H(T|θ) − 1)/log(K−1)`). Mathlib has
+no finite-discrete entropy and mutual-information layer (only `Real.negMulLog`, the binary-entropy
+*function*, and topological entropy). It does hold the Kullback–Leibler divergence `klDiv` with its
+data-processing inequality for pushforward measures, `klDiv_map_le`, in
+`Mathlib/InformationTheory/KullbackLeibler/DataProcessing.lean`. Discharging the two hypotheses in
+the discrete form used here builds a small finite-discrete information-theory library, and this
+file builds it bottom-up.
 
 ## Status (honest)
 Done here (all `sorry`-free):
@@ -36,9 +40,11 @@ Done here (all `sorry`-free):
   single analytic input is the unnormalised max-entropy bound `entropy_masses_le` (finite Gibbs),
   used both for the `K−1` error symbols and (via `negMulLog_add_le`) the binary split.
 
-**Not yet done** (the remaining Mathlib-gap frontier): the *tight* Fano constant
-`Real.binEntropy Pe` (≤ `log 2`) in place of `log 2` — that refinement needs Jensen on the concavity
-of `binEntropy` (and a per-`y` normalisation); the looser `log 2` is all `fano'`/`ChengCCC` consume.
+**Not done here**: the *tight* Fano constant `Real.binEntropy Pe` (≤ `log 2`) in place of
+`log 2`; the looser `log 2` is all `fano'`/`ChengCCC` consume. The tight bound
+`H(X | Y) ≤ h₂(Pe) + Pe log₂ (|α| - 1)` is proved in the `cslib-frontier` library as
+`Cslib.Probability.PMF.conditionalEntropy_le_binEntropy_add_mul_logb`,
+for a deterministic estimator over a joint `PMF`.
 `ChengCCC`'s abstract arithmetic skeletons (`misid_lower_bound`, `forgetting_lower_bound`) still
 take Fano/DPI/`hCond` as explicit hypotheses, but the wiring IS done: `cheng_misid_bound_discharged`
 and `cheng_forgetting_bound_discharged` discharge all three against these theorems for the Markov

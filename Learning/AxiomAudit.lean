@@ -3,6 +3,8 @@ module
 public import Learning.BayesRedundancy
 public import Learning.DecisionListData
 public import Learning.DecisionListSolver
+public import Learning.DualHelly
+public import Learning.ParityElimination
 public import Learning.SQBounds
 public import Learning.SQEnvelope
 public import Learning.SQObjects
@@ -396,3 +398,25 @@ set_option linter.style.longLine false in
 /-- info: 'DecisionList.solve_decides' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs (whitespace := lax) in
 #print axioms DecisionList.solve_decides
+
+-- The elimination learner of the parities: its mistake bound in the realizable model.
+set_option linter.style.longLine false in
+/-- info: 'ParityElimination.mistakeBound_learner_le' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ParityElimination.mistakeBound_learner_le
+
+-- The dual Helly lower bound for learners whose hypotheses lie in a class.
+set_option linter.style.longLine false in
+/-- info: 'DualHelly.exists_mistakes_eq' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms DualHelly.exists_mistakes_eq
+
+set_option linter.style.longLine false in
+/-- info: 'DualHelly.le_mistakeBound' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms DualHelly.le_mistakeBound
+
+set_option linter.style.longLine false in
+/-- info: 'DualHelly.exists_stream_mistakes_eq' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms DualHelly.exists_stream_mistakes_eq

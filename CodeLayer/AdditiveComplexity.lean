@@ -5,13 +5,15 @@ public import CodeLayer.BinaryKraft
 public import CodeLayer.Code.EvalLaws
 
 /-!
-# Additive AST program-length complexity `KE` (two-machine invariance, part one)
+# Additive AST program-length complexity `KE`
 
 Extends `CodeLayer/Code/EvalLaws.lean` (`Computes`, `const_computes`) with an
 **additive** program-length measure that the index/bit-length measures (`codelen`, `codelen'`)
-cannot provide.
-
-Status: PROVED.
+cannot provide. The public surface is the encoding `E` with its length `elen` and the induced
+complexity `KE`, the exact length laws (`E_len_comp`, `E_len_pair`, `E_len_prec` and the one-node
+cases), the upper bounds (`KE_le`, `KE_le_const`, `KE_comp_le`, `KE_pair_le`, `KE_subadditive`),
+parse uniqueness and Kraft's inequality (`E_injective`, `kraft_KE`), and the counting bounds
+(`card_KE_le`, `card_KE_le_two_pow`, `KE_unbounded`).
 
 ## Why additive `E` (not the existing `encode`-based measures)
 `AIT/KolmogorovComplexity.lean` and `AIT/KolmogorovBitlen.lean` measure a program by its Gödel index
@@ -27,18 +29,20 @@ program length is additive **by construction**: `|E (comp cf cg)| = 3 + |E cf| +
 
 ## What this establishes
 * `E`, `elen`, `KE`: self-delimiting AST encoding, its bit-length, and the induced complexity.
-* `E_len_comp`, `E_len_pair`: exact additive length laws (the payoff `encode` cannot give).
-* `KE_le`, `exists_min_E`: the minimization API (mirrors `K_le`/`exists_min_code` of
-  `AIT/KolmogorovComplexity.lean`).
-* `KE_comp_le`, `KE_subadditive`: compositional upper bounds — `KE (Nat.pair x y) ≤ KE x + KE y + 3`
-  (the additive subadditivity the index measure cannot prove).
+* `E_len_comp`, `E_len_pair`, `E_len_prec`, `E_len_rfind'`, `elen_zero`, `elen_succ`, `elen_left`,
+  `elen_right`: exact additive length laws, one per constructor (the payoff `encode` cannot give).
+* `KE_le`, `KE_le_const`, `exists_min_E`: the minimization API (mirrors `K_le`/`K_le_const`/
+  `exists_min_code` of `AIT/KolmogorovComplexity.lean`).
+* `KE_comp_le`, `KE_pair_le`, `KE_subadditive`: compositional upper bounds —
+  `KE (Nat.pair x y) ≤ KE x + KE y + 3` (the additive subadditivity the index measure cannot
+  prove).
 * `E_append_inj`, `E_injective`: **parse uniqueness** — the prefix encoding decodes: a serialized
   program is a prefix of no other program's serialization, so `E` is injective. This is what makes
   program length a *code* length rather than an arbitrary weight.
-* `card_KE_le`, `finite_KE_le`: the **counting bound** — at most `2 ^ (L + 1)` naturals have
-  `KE ≤ L`, because distinct values need distinct shortest programs, `E` is injective, and there
-  are fewer than `2 ^ (L + 1)` bit-strings of length at most `L`. This is the incompressibility
-  method's supply side.
+* `card_KE_le`, `finite_KE_le`, `KE_unbounded`: the **counting bound** — at most `2 ^ (L + 1)`
+  naturals have `KE ≤ L`, because distinct values need distinct shortest programs, `E` is
+  injective, and there are fewer than `2 ^ (L + 1)` bit-strings of length at most `L`. This is the
+  incompressibility method's supply side.
 * `summable_two_pow_neg_KE`, `finset_card_KE_le_two_pow`, `card_KE_le_two_pow`: the **sharp count**
   — at most `2 ^ L` naturals have `KE ≤ L`, by Kraft's inequality for `KE` (`kraft_KE`) rather than
   by counting bit-strings, the same three-line argument `PrefixMachine.finset_card_KB_le` runs for
@@ -47,10 +51,11 @@ program length is additive **by construction**: `|E (comp cf cg)| = 3 + |E cf| +
   a one-symbol swap of the `K_t` construction (`elen` for the index `codelen`).
 
 ## What this does NOT establish (flagged)
-* Two-machine additive invariance itself (the second half): needs a length-efficient *binary*
-  constant `bconst : ℕ → Code` with `|E (bconst n)| = O(Nat.size n)` — Mathlib's `Code.const` is
-  a *unary* tower (`const (n+1) = comp succ (const n)`), so `|E (Code.const n)| = Θ(n)`,
-  exponential in bit-length. Deferred to a separate sub-project (the `bconst` gate).
+* Two-machine additive invariance itself: it needs a length-efficient *binary* constant
+  `bconst : ℕ → Code` with `|E (bconst n)| = O(Nat.size n)`, since Mathlib's `Code.const` is a
+  *unary* tower (`const (n+1) = comp succ (const n)`) with `|E (Code.const n)| = Θ(n)`,
+  exponential in bit-length. `CodeLayer/BinaryConstant.lean` builds `bconst` and proves that
+  bound, and the invariance statements (`invariance_general`) are proved there.
 * Does NOT relate `KE` to an abstract real-valued description length.
 
 ## Hypotheses: standard vs added
@@ -95,10 +100,34 @@ theorem E_len_comp (cf cg : Code) : elen (comp cf cg) = 3 + elen cf + elen cg :=
 theorem E_len_pair (cf cg : Code) : elen (pair cf cg) = 3 + elen cf + elen cg := by
   simp only [elen, E, List.length_append, List.length_cons, List.length_nil]
 
+/-- The additive length law for `prec` (identical shape to `E_len_comp`). -/
+theorem E_len_prec (cf cg : Code) : elen (prec cf cg) = 3 + elen cf + elen cg := by
+  simp only [elen, E, List.length_append, List.length_cons, List.length_nil]
+
+/-- The additive length law for `rfind'`: the 3-bit opcode plus the child's length. -/
+theorem E_len_rfind' (cf : Code) : elen (rfind' cf) = 3 + elen cf := by
+  simp only [elen, E, List.length_append, List.length_cons, List.length_nil]
+
+/-- The base code `zero` is one 3-bit opcode. -/
+theorem elen_zero : elen Code.zero = 3 := rfl
+
+/-- The base code `succ` is one 3-bit opcode. -/
+theorem elen_succ : elen Code.succ = 3 := rfl
+
+/-- The base code `left` is one 3-bit opcode. -/
+theorem elen_left : elen Code.left = 3 := rfl
+
+/-- The base code `right` is one 3-bit opcode. -/
+theorem elen_right : elen Code.right = 3 := rfl
+
 /-- Any program computing `x` bounds `KE x` by its own additive length. (Mirrors
 `KolmogorovComplexity.K_le`: `elen c` is a member of the minimand.) -/
 theorem KE_le {c : Code} {x : ℕ} (h : Computes c x) : KE x ≤ elen c :=
   Nat.sInf_le ⟨c, h, rfl⟩
+
+/-- `KE` is at most the additive length of the unary constant code: `Code.const x` computes `x`
+(`const_computes`). -/
+theorem KE_le_const (x : ℕ) : KE x ≤ elen (Code.const x) := KE_le (const_computes x)
 
 /-- `KE x` is achieved by some code. (Mirrors `KolmogorovComplexity.exists_min_code`: the minimand
 is nonempty via `const_computes`, so `Nat.sInf_mem` applies.) -/
@@ -114,6 +143,14 @@ theorem KE_comp_le {c d : Code} {x : ℕ} (h : Computes (comp c d) x) :
     KE x ≤ elen c + elen d + 3 := by
   have hle := KE_le h
   rw [E_len_comp] at hle
+  omega
+
+/-- Pairing upper bound: a `pair c d` computing `x` bounds `KE x` additively — `KE_le` on the
+witness, then the additive `E_len_pair`. -/
+theorem KE_pair_le {c d : Code} {x : ℕ} (h : Computes (pair c d) x) :
+    KE x ≤ elen c + elen d + 3 := by
+  have hle := KE_le h
+  rw [E_len_pair] at hle
   omega
 
 /-- **Subadditivity** (the headline additive bound): `KE (Nat.pair x y) ≤ KE x + KE y + 3`. Take the
@@ -342,6 +379,14 @@ theorem finite_KE_le (L : ℕ) : {x : ℕ | KE x ≤ L}.Finite := by
     mem_bitLists (by rw [length_E_minCode]; exact hx)
   exact Set.Finite.subset (Set.Finite.preimage (minCode_E_injective.injOn)
     (bitLists L).finite_toSet) hsub
+
+/-- `KE` is unbounded: incompressible numbers of every additive complexity exist, because only
+finitely many naturals have `KE x ≤ n` (`finite_KE_le`) and there are infinitely many naturals. -/
+theorem KE_unbounded (n : ℕ) : ∃ x, n < KE x := by
+  by_contra h
+  have hall : ∀ x, KE x ≤ n := fun x => by
+    by_contra hx; exact h ⟨x, not_le.mp hx⟩
+  exact Set.infinite_univ ((finite_KE_le n).subset (fun x _ => hall x))
 
 /-- **The counting bound**: at most `2 ^ (L + 1)` naturals have complexity at most `L`. Each such
 value carries its own shortest program (`minCode_E_injective`), and those programs are bit-strings

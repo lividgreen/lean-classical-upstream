@@ -1,5 +1,5 @@
 name = "classical_upstream"
-version = "0.4.0"
+version = "0.5.0"
 keywords = ["math", "algorithmic-information-theory", "learning-theory", "ergodic-theory", "realizability"]
 
 [leanOptions]
@@ -11,67 +11,66 @@ weak.linter.style.header = false
 maxSynthPendingDepth = 3
 
 [[require]]
+name = "Foundation"
+git = "https://github.com/FormalizedFormalLogic/Foundation"
+rev = "fbcfee52cb4a892087fa978366282a9ebd844f29"
+
+[[require]]
+name = "cslib-frontier"
+git = "https://github.com/cslib-community/cslib-frontier"
+rev = "13929006ffbd7ee8f4bb368a5bfa72638d53101d"
+
+# Last on purpose: a shared package takes its revision from the last require that pins it, and
+# `cslib-frontier` and the `cslib` it pins sit on a newer Lean than Mathlib's here.
+[[require]]
 name = "mathlib"
 scope = "leanprover-community"
 rev = "v4.35.0"
 
-[[require]]
-name = "Foundation"
-git = "https://github.com/FormalizedFormalLogic/Foundation"
-rev = "63bfd1b2e821dc2367b08f68d379303d08631f83"
-
+# In every library below the glob includes the root itself (`<Root>.*` matches the root and its
+# submodules, `<Root>.+` would exclude the root): Lake only counts a root that some glob matches,
+# and doc-gen4 documents the roots and their import closure, so a missed root gives empty docs.
 [[lean_lib]]
 name = "CodeLayer"
-# The glob must include the root itself (`<Root>.*` matches the root and its submodules),
-# for the same reason as the `ALT` library of the package that requires this one.
 roots = ["CodeLayer"]
 globs = ["CodeLayer.*"]
 
 [[lean_lib]]
 name = "AIT"
-# The glob must include the root itself (`<Root>.*` matches the root and its submodules),
-# for the same reason as the `ALT` library of the package that requires this one.
 roots = ["AIT"]
 globs = ["AIT.*"]
 
 [[lean_lib]]
 name = "ChaitinIncompleteness"
-# The glob must include the root itself (`<Root>.*` matches the root and its submodules),
-# for the same reason as the `ALT` library of the package that requires this one.
 roots = ["ChaitinIncompleteness"]
 globs = ["ChaitinIncompleteness.*"]
 
 [[lean_lib]]
 name = "Learning"
-# The glob must include the root itself (`<Root>.*` matches the root and its submodules),
-# for the same reason as the `ALT` library of the package that requires this one.
 roots = ["Learning"]
 globs = ["Learning.*"]
 
 [[lean_lib]]
 name = "AnytimeValid"
-# The glob must include the root itself (`<Root>.*` matches the root and its submodules),
-# for the same reason as the `ALT` library of the package that requires this one.
 roots = ["AnytimeValid"]
 globs = ["AnytimeValid.*"]
 
 [[lean_lib]]
 name = "ErgodicTheory"
-# The glob must include the root itself (`<Root>.*` matches the root and its submodules),
-# for the same reason as the `ALT` library of the package that requires this one.
 roots = ["ErgodicTheory"]
 globs = ["ErgodicTheory.*"]
 
 [[lean_lib]]
 name = "Realizability"
-# The glob must include the root itself (`<Root>.*` matches the root and its submodules),
-# for the same reason as the `ALT` library of the package that requires this one.
 roots = ["Realizability"]
 globs = ["Realizability.*"]
 
 [[lean_lib]]
 name = "ShannonInfo"
-# The glob must include the root itself (`<Root>.*` matches the root and its submodules),
-# for the same reason as the `ALT` library of the package that requires this one.
 roots = ["ShannonInfo"]
 globs = ["ShannonInfo.*"]
+
+[[lean_lib]]
+name = "Combinatorics"
+roots = ["Combinatorics"]
+globs = ["Combinatorics.*"]

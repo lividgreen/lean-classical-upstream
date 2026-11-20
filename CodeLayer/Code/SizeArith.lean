@@ -20,6 +20,11 @@ bit-length.
   which is what an additive account of a polynomial bound composes with.
 * `size_le_self` — a bit-length never exceeds the value it measures. Available at zero, where the
   `max`-form bounds are not.
+* `size_le_size_pair_left`, `size_le_size_pair_right` — pairing never shortens a component: each of
+  `a` and `b` has bit-length at most that of `Nat.pair a b`.
+* `size_four_mul_add_four_le`, `size_four_mul_add_six_le`, `size_succ_le_size`,
+  `size_two_mul_succ_le` — the small-increment facts: quadrupling and adding a constant costs at
+  most three bits, and incrementing or doubling-and-adding-one costs at most one.
 
 The module stays deliberately light: it is arithmetic on bit-lengths, and knows nothing about the
 programs whose sizes are being counted.
@@ -79,6 +84,32 @@ theorem size_pair_le (a b : ℕ) :
 
 /-- Widths never exceed the value. Safe at zero, unlike the `max`-form bounds. -/
 theorem size_le_self (n : ℕ) : Nat.size n ≤ n := Nat.size_le.mpr Nat.lt_two_pow_self
+
+/-- Pairing never shortens its first component: `Nat.size a ≤ Nat.size (Nat.pair a b)`, since
+`a ≤ Nat.pair a b`. -/
+theorem size_le_size_pair_left (a b : ℕ) : Nat.size a ≤ Nat.size (Nat.pair a b) :=
+  Nat.size_le_size (Nat.left_le_pair a b)
+
+/-- Pairing never shortens its second component: `Nat.size b ≤ Nat.size (Nat.pair a b)`, since
+`b ≤ Nat.pair a b`. -/
+theorem size_le_size_pair_right (a b : ℕ) : Nat.size b ≤ Nat.size (Nat.pair a b) :=
+  Nat.size_le_size (Nat.right_le_pair a b)
+
+/-- Incrementing below a bound costs at most one bit over the bound's width: if `m ≤ n` then
+`Nat.size (m + 1) ≤ Nat.size n + 1`. -/
+theorem size_succ_le_size {m n : ℕ} (h : m ≤ n) : Nat.size (m + 1) ≤ Nat.size n + 1 := by
+  rw [Nat.size_le]
+  have hn : n < 2 ^ Nat.size n := Nat.lt_size_self n
+  have hpos : (1 : ℕ) ≤ 2 ^ Nat.size n := Nat.one_le_two_pow
+  calc m + 1 ≤ 2 ^ Nat.size n := by omega
+    _ < 2 ^ (Nat.size n + 1) := by rw [pow_succ]; omega
+
+/-- Doubling and adding one costs at most one bit: `Nat.size (2 * S + 1) ≤ Nat.size S + 1`. -/
+theorem size_two_mul_succ_le (S : ℕ) : Nat.size (2 * S + 1) ≤ Nat.size S + 1 := by
+  rw [Nat.size_le]
+  have hS : S < 2 ^ Nat.size S := Nat.lt_size_self S
+  have hp : (2 : ℕ) ^ (Nat.size S + 1) = 2 * 2 ^ Nat.size S := by rw [pow_succ]; ring
+  omega
 
 /-- `Nat.size (4 * p + 4) ≤ Nat.size p + 3`: quadrupling and adding a small constant costs at most
 three more bits. From `p < 2 ^ size p` (`Nat.lt_size_self`), `4 * p + 4 ≤ 4 * 2 ^ size p < 8 * 2 ^

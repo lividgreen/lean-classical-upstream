@@ -1,6 +1,8 @@
 module
 
+public import ShannonInfo.BitGuessing
 public import ShannonInfo.ChengCCC
+public import ShannonInfo.CslibFrontier.Probability.ProductConditioning.SideInformation
 public import ShannonInfo.FiniteInfoTheory
 
 
@@ -83,3 +85,17 @@ set_option linter.style.longLine false in
 /-- info: 'ChengCCC.cheng_forgetting_bound_discharged' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs (whitespace := lax) in
 #print axioms ChengCCC.cheng_forgetting_bound_discharged
+
+-- Holenstein's Corollary 4.3, in the vendored probability modules: the total distance of a
+-- message's columns from independent uniform ones.
+set_option linter.style.longLine false in
+/-- info: 'Cslib.Probability.PMF.sum_dist_filter_sideJoint_le' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms Cslib.Probability.PMF.sum_dist_filter_sideJoint_le
+
+-- The bits of a uniform string a causal guesser reads right from a short message: the chain rule
+-- for relative entropy and Pinsker's inequality, bit by bit.
+set_option linter.style.longLine false in
+/-- info: 'BitGuessing.sum_hits_le' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms BitGuessing.sum_hits_le

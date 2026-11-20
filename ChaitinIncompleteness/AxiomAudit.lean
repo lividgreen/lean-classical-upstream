@@ -3,6 +3,7 @@ module
 public import ChaitinIncompleteness.ChaitinIncompleteness
 public import ChaitinIncompleteness.ChaitinPrefix
 public import ChaitinIncompleteness.KBEnumerable
+public import ChaitinIncompleteness.ChaitinBoundParam
 
 
 /-!
@@ -108,3 +109,10 @@ set_option linter.style.longLine false in
 /-- info: 'KolmogorovComplexity.chaitin_true_unprovable_KB' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs (whitespace := lax) in
 #print axioms KolmogorovComplexity.chaitin_true_unprovable_KB
+
+/-! ## The bound uniform in a parameter -/
+
+set_option linter.style.longLine false in
+/-- info: 'KolmogorovComplexity.chaitin_bound_KB_param' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms KolmogorovComplexity.chaitin_bound_KB_param

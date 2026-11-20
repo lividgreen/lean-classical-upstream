@@ -226,3 +226,111 @@ set_option linter.style.longLine false in
 /-- info: 'PriorNormalization.prior_tsum_le_one' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs (whitespace := lax) in
 #print axioms PriorNormalization.prior_tsum_le_one
+
+-- A poly-bounded function stays poly-bounded under an inner map of linearly bounded bit-length.
+set_option linter.style.longLine false in
+/-- info: 'TimeCost.PolyBounded.comp_size_le' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms TimeCost.PolyBounded.comp_size_le
+
+-- The basic laws of the code layer's reusable surface: the base and composition clauses of `eval`,
+-- uniqueness of the value a code computes, the small bit-length facts, the identity's failure to be
+-- poly-bounded and the transfer of `PolyTime` along equal functions and to a domain, the constant
+-- code's identification with Mathlib's tower, the remaining additive length laws, and the
+-- complexity bounds `KE_le_const`, `KE_pair_le` and `KE_unbounded`.
+
+/-- info: 'CodeEvalLaws.eval_comp' does not depend on any axioms -/
+#guard_msgs (whitespace := lax) in
+#print axioms CodeEvalLaws.eval_comp
+
+/-- info: 'CodeEvalLaws.eval_zero' does not depend on any axioms -/
+#guard_msgs (whitespace := lax) in
+#print axioms CodeEvalLaws.eval_zero
+
+/-- info: 'CodeEvalLaws.eval_succ' does not depend on any axioms -/
+#guard_msgs (whitespace := lax) in
+#print axioms CodeEvalLaws.eval_succ
+
+/-- info: 'KolmogorovComplexity.Computes.unique' does not depend on any axioms -/
+#guard_msgs (whitespace := lax) in
+#print axioms KolmogorovComplexity.Computes.unique
+
+set_option linter.style.longLine false in
+/-- info: 'CodeSizeArith.size_succ_le_size' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms CodeSizeArith.size_succ_le_size
+
+set_option linter.style.longLine false in
+/-- info: 'CodeSizeArith.size_two_mul_succ_le' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms CodeSizeArith.size_two_mul_succ_le
+
+set_option linter.style.longLine false in
+/-- info: 'CodeSizeArith.size_le_size_pair_left' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms CodeSizeArith.size_le_size_pair_left
+
+set_option linter.style.longLine false in
+/-- info: 'CodeSizeArith.size_le_size_pair_right' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms CodeSizeArith.size_le_size_pair_right
+
+set_option linter.style.longLine false in
+/-- info: 'TimeCost.not_polyBounded_id' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms TimeCost.not_polyBounded_id
+
+/-- info: 'TimeCost.PolyTime.congr' depends on axioms: [propext, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms TimeCost.PolyTime.congr
+
+/-- info: 'TimeCost.PolyBounded.polyBoundedOn' depends on axioms: [propext, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms TimeCost.PolyBounded.polyBoundedOn
+
+/-- info: 'TimeCost.PolyTime.polyTimeOn' depends on axioms: [propext, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms TimeCost.PolyTime.polyTimeOn
+
+/-- info: 'TimeCost.constCode_eq_const' depends on axioms: [propext] -/
+#guard_msgs (whitespace := lax) in
+#print axioms TimeCost.constCode_eq_const
+
+/-- info: 'AdditiveComplexity.E_len_prec' depends on axioms: [propext] -/
+#guard_msgs (whitespace := lax) in
+#print axioms AdditiveComplexity.E_len_prec
+
+/-- info: 'AdditiveComplexity.E_len_rfind'' depends on axioms: [propext] -/
+#guard_msgs (whitespace := lax) in
+#print axioms AdditiveComplexity.E_len_rfind'
+
+/-- info: 'AdditiveComplexity.elen_zero' does not depend on any axioms -/
+#guard_msgs (whitespace := lax) in
+#print axioms AdditiveComplexity.elen_zero
+
+/-- info: 'AdditiveComplexity.elen_succ' does not depend on any axioms -/
+#guard_msgs (whitespace := lax) in
+#print axioms AdditiveComplexity.elen_succ
+
+/-- info: 'AdditiveComplexity.elen_left' does not depend on any axioms -/
+#guard_msgs (whitespace := lax) in
+#print axioms AdditiveComplexity.elen_left
+
+/-- info: 'AdditiveComplexity.elen_right' does not depend on any axioms -/
+#guard_msgs (whitespace := lax) in
+#print axioms AdditiveComplexity.elen_right
+
+set_option linter.style.longLine false in
+/-- info: 'AdditiveComplexity.KE_le_const' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms AdditiveComplexity.KE_le_const
+
+set_option linter.style.longLine false in
+/-- info: 'AdditiveComplexity.KE_pair_le' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms AdditiveComplexity.KE_pair_le
+
+set_option linter.style.longLine false in
+/-- info: 'AdditiveComplexity.KE_unbounded' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms AdditiveComplexity.KE_unbounded
